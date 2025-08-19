@@ -11,6 +11,7 @@ import Events from "@/pages/events";
 import Chat from "@/pages/chat";
 import ApiDocs from "@/pages/api-docs";
 import Audit from "@/pages/audit";
+// import Testing from "@/pages/testing";
 import NotFound from "@/pages/not-found";
 import Sidebar from "@/components/layout/sidebar";
 import Header from "@/components/layout/header";
@@ -31,6 +32,7 @@ function Router() {
             <Route path="/events" component={Events} />
             <Route path="/chat" component={Chat} />
             <Route path="/audit" component={Audit} />
+            {/* <Route path="/testing" component={Testing} /> */}
             <Route path="/api-docs" component={ApiDocs} />
             <Route component={NotFound} />
           </Switch>

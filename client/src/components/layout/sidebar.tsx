@@ -9,7 +9,8 @@ import {
   Link as LinkIcon,
   User,
   MessageCircle,
-  Shield
+  Shield,
+  TestTube
 } from "lucide-react";
 
 const navigationItems = [

@@ -7,6 +7,7 @@ import {
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import crypto from "crypto";
+import bcrypt from "bcryptjs";
 
 export interface IStorage {
   // Participant operations
@@ -15,6 +16,7 @@ export interface IStorage {
   createParticipant(participant: InsertParticipant): Promise<Participant>;
   getAllParticipants(): Promise<Participant[]>;
   getParticipantStats(): Promise<ParticipantStats>;
+  updateParticipantPassword(id: string, passwordHash: string): Promise<void>;
   
   // Blockchain operations
   addBlock(data: BlockchainData): Promise<Block>;
@@ -78,18 +80,22 @@ export class MemStorage implements IStorage {
       role: 'manufacturer',
       email: 'contact@acmecorp.com'
     });
+    // Set default password for testing
+    await this.updateParticipantPassword(manufacturer.id, bcrypt.hashSync('demo123', 10));
 
     const shipper = await this.createParticipant({
       username: 'GlobalLogistics',
       role: 'shipper',
       email: 'ops@globallogistics.com'
     });
+    await this.updateParticipantPassword(shipper.id, bcrypt.hashSync('demo123', 10));
 
     const retailer = await this.createParticipant({
       username: 'TechMart',
       role: 'retailer',
       email: 'procurement@techmart.com'
     });
+    await this.updateParticipantPassword(retailer.id, bcrypt.hashSync('demo123', 10));
 
     // Add sample assets with events
     const asset1 = await this.createAsset({
@@ -305,6 +311,15 @@ export class MemStorage implements IStorage {
       activeParticipants: participants.filter(p => p.status === 'active').length,
       chainIntegrity: 100 // Always 100% for this simple implementation
     };
+  }
+
+  async updateParticipantPassword(id: string, passwordHash: string): Promise<void> {
+    const participant = this.participants.get(id);
+    if (participant) {
+      // Add password field to participant if it doesn't exist
+      (participant as any).passwordHash = passwordHash;
+      this.participants.set(id, participant);
+    }
   }
 }
 

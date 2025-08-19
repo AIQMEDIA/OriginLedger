@@ -2,40 +2,166 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertParticipantSchema, insertAssetSchema, type BlockchainData } from "@shared/schema";
+import { requireAuth, requireRole, optionalAuth, generateToken, checkPassword, hashPassword } from './auth';
+import crypto from 'crypto';
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Register a new participant
-  app.post('/api/register', async (req, res) => {
+  // Enhanced utility function for calculating block hash
+  const calculateBlockHash = (block: any): string => {
+    const { index, timestamp, data, prevHash } = block;
+    const content = `${index}${timestamp}${JSON.stringify(data)}${prevHash}`;
+    return crypto.createHash("sha256").update(content).digest("hex");
+  };
+
+  // Authentication endpoints
+  app.post('/api/auth/login', async (req, res) => {
     try {
-      const { user, role } = req.body;
+      const { username, password } = req.body;
+      
+      if (!username || !password) {
+        return res.status(400).json({ 
+          error: 'Username and password required',
+          code: 'MISSING_CREDENTIALS'
+        });
+      }
+
+      // Find participant by username
+      const participant = await storage.getParticipantByUsername(username);
+      if (!participant || !(participant as any).passwordHash) {
+        return res.status(401).json({ 
+          error: 'Invalid credentials',
+          code: 'INVALID_CREDENTIALS'
+        });
+      }
+
+      // Verify password
+      const isValidPassword = checkPassword(password, (participant as any).passwordHash);
+      if (!isValidPassword) {
+        return res.status(401).json({ 
+          error: 'Invalid credentials',
+          code: 'INVALID_CREDENTIALS'
+        });
+      }
+
+      // Generate JWT token
+      const token = generateToken({
+        id: participant.id,
+        username: participant.username,
+        role: participant.role
+      });
+
+      res.json({
+        message: 'Login successful',
+        token,
+        user: {
+          id: participant.id,
+          username: participant.username,
+          role: participant.role
+        }
+      });
+
+    } catch (error) {
+      res.status(500).json({ 
+        error: 'Login failed',
+        code: 'LOGIN_ERROR',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  app.post('/api/auth/set-password', requireAuth, async (req, res) => {
+    try {
+      const { currentPassword, newPassword } = req.body;
+      
+      if (!newPassword || newPassword.length < 6) {
+        return res.status(400).json({ 
+          error: 'Password must be at least 6 characters',
+          code: 'WEAK_PASSWORD'
+        });
+      }
+
+      // Hash and store the new password
+      const passwordHash = hashPassword(newPassword);
+      await storage.updateParticipantPassword(req.user!.id, passwordHash);
+
+      res.json({ message: 'Password updated successfully' });
+
+    } catch (error) {
+      res.status(500).json({ 
+        error: 'Password update failed',
+        code: 'PASSWORD_UPDATE_ERROR'
+      });
+    }
+  });
+
+  // Get current authenticated user info
+  app.get('/api/auth/me', requireAuth, async (req, res) => {
+    const participant = await storage.getParticipant(req.user!.id);
+    if (!participant) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    res.json({
+      id: participant.id,
+      username: participant.username,
+      role: participant.role,
+      email: participant.email,
+      status: participant.status
+    });
+  });
+
+  // Register a new participant (now with optional authentication)
+  app.post('/api/register', optionalAuth, async (req, res) => {
+    try {
+      const { user, role, email, password } = req.body;
       
       // Validate input
       const participantData = insertParticipantSchema.parse({
         username: user,
         role: role,
+        email: email,
         status: 'active'
       });
       
       // Check if user already exists
       const existing = await storage.getParticipantByUsername(user);
       if (existing) {
-        return res.status(409).json({ error: 'User already exists' });
+        return res.status(409).json({ 
+          error: 'User already exists',
+          code: 'USER_EXISTS'
+        });
       }
       
       // Create participant
       const participant = await storage.createParticipant(participantData);
       
+      // Set password if provided
+      if (password && password.length >= 6) {
+        const passwordHash = hashPassword(password);
+        await storage.updateParticipantPassword(participant.id, passwordHash);
+      }
+      
       res.status(201).json({ 
         msg: `User ${user} registered as ${role}.`,
-        participant 
+        participant: {
+          id: participant.id,
+          username: participant.username,
+          role: participant.role,
+          email: participant.email,
+          status: participant.status
+        }
       });
     } catch (error) {
-      res.status(400).json({ error: 'Invalid input data' });
+      res.status(400).json({ 
+        error: 'Invalid input data',
+        code: 'VALIDATION_ERROR',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
     }
   });
 
-  // Add a supply chain event to the blockchain
-  app.post('/api/add-event', async (req, res) => {
+  // Add a supply chain event to the blockchain (with optional auth)
+  app.post('/api/add-event', optionalAuth, async (req, res) => {
     try {
       const { user, action, asset_id, meta = {} } = req.body;
       
@@ -187,6 +313,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
             error: 'Non-sequential block index',
             code: 'INVALID_INDEX',
             blockIndex: i
+          });
+        }
+
+        // Verify block hash integrity by recalculating
+        const expectedHash = calculateBlockHash({
+          index: currentBlock.index,
+          timestamp: currentBlock.timestamp,
+          data: currentBlock.data,
+          prevHash: currentBlock.prevHash
+        });
+        
+        if (currentBlock.hash !== expectedHash) {
+          return res.json({ 
+            valid: false, 
+            error: 'Block hash corrupted',
+            code: 'CORRUPTED_HASH',
+            blockIndex: i,
+            expected: expectedHash,
+            actual: currentBlock.hash
           });
         }
       }
