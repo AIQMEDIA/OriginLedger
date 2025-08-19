@@ -75,4 +75,10 @@ export const api = {
     const response = await apiRequest('GET', `${API_BASE}/health`);
     return response.json();
   },
+
+  // Chatbot
+  sendChatMessage: async (message: string) => {
+    const response = await apiRequest('POST', `${API_BASE}/chatbot`, { message });
+    return response.json();
+  },
 };

@@ -8,6 +8,7 @@ import Blockchain from "@/pages/blockchain";
 import Assets from "@/pages/assets";
 import Participants from "@/pages/participants";
 import Events from "@/pages/events";
+import Chat from "@/pages/chat";
 import ApiDocs from "@/pages/api-docs";
 import NotFound from "@/pages/not-found";
 import Sidebar from "@/components/layout/sidebar";
@@ -27,6 +28,7 @@ function Router() {
             <Route path="/assets" component={Assets} />
             <Route path="/participants" component={Participants} />
             <Route path="/events" component={Events} />
+            <Route path="/chat" component={Chat} />
             <Route path="/api-docs" component={ApiDocs} />
             <Route component={NotFound} />
           </Switch>

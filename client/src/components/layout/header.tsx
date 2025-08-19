@@ -10,6 +10,7 @@ const pageInfo = {
   "/assets": { title: "Asset Tracking", subtitle: "Monitor assets throughout the supply chain" },
   "/participants": { title: "Participants", subtitle: "Manage supply chain participants" },
   "/events": { title: "Add Event", subtitle: "Record new supply chain events" },
+  "/chat": { title: "AI Assistant", subtitle: "Get help and track assets with AI" },
   "/api-docs": { title: "API Documentation", subtitle: "Integration guides and endpoints" },
 };
 

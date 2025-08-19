@@ -809,6 +809,156 @@ def internal_error(error):
     }), 500
 
 # ============================================================================
+# CHATBOT FUNCTIONALITY
+# ============================================================================
+
+@app.route('/api/chatbot', methods=['POST'])
+def chatbot():
+    """
+    Simple chatbot for OriginLedger support and asset tracking queries.
+    
+    Expected JSON payload:
+    {
+        "message": "user question or command"
+    }
+    
+    Returns:
+        200: Bot response with helpful information
+        400: Invalid input
+        500: Server error
+    """
+    try:
+        data = request.get_json()
+        
+        if not data:
+            return jsonify({'error': 'No JSON data provided'}), 400
+        
+        user_input = data.get('message', '').strip().lower()
+        
+        if not user_input:
+            return jsonify({'error': 'Message is required'}), 400
+        
+        # Check for asset tracking queries
+        if 'where' in user_input and 'asset' in user_input:
+            # Try to extract asset_id using regex
+            import re
+            search = re.findall(r'[a-zA-Z]+-\d+-\d+|\d+', user_input)
+            asset_id = search[0] if search else None
+            
+            if asset_id:
+                # Check if asset exists in our assets registry
+                if asset_id in assets:
+                    asset_info = assets[asset_id]
+                    current_status = asset_info.get('current_status', 'unknown')
+                    current_location = asset_info.get('current_location', 'unknown')
+                    
+                    # Get recent events for this asset
+                    recent_events = []
+                    for block in blockchain.chain:
+                        if block.data.get('asset_id') == asset_id:
+                            recent_events.append({
+                                'action': block.data.get('action'),
+                                'user': block.data.get('user'),
+                                'timestamp': datetime.fromtimestamp(block.timestamp).strftime('%Y-%m-%d %H:%M'),
+                                'location': block.data.get('meta', {}).get('location', 'N/A')
+                            })
+                    
+                    if recent_events:
+                        latest_event = recent_events[-1]
+                        return jsonify({
+                            'reply': f"Asset {asset_id} is currently '{current_status}' at {current_location}. Latest event: {latest_event['action']} by {latest_event['user']} on {latest_event['timestamp']}.",
+                            'asset_id': asset_id,
+                            'status': current_status,
+                            'location': current_location,
+                            'events': recent_events
+                        })
+                    else:
+                        return jsonify({
+                            'reply': f"Asset {asset_id} found but no events recorded yet.",
+                            'asset_id': asset_id
+                        })
+                else:
+                    return jsonify({
+                        'reply': f"Asset {asset_id} not found in the system. Please check the asset ID or register it first."
+                    })
+            else:
+                return jsonify({
+                    'reply': "I couldn't find an asset ID in your message. Please specify an asset ID like 'PRD-2024-001' or just numbers."
+                })
+        
+        # Asset status queries
+        elif 'status' in user_input and ('asset' in user_input or any(char.isdigit() for char in user_input)):
+            import re
+            search = re.findall(r'[a-zA-Z]+-\d+-\d+|\d+', user_input)
+            asset_id = search[0] if search else None
+            
+            if asset_id and asset_id in assets:
+                asset_info = assets[asset_id]
+                return jsonify({
+                    'reply': f"Asset {asset_id} status: {asset_info.get('current_status', 'unknown')} at {asset_info.get('current_location', 'unknown location')}. Last updated: {datetime.fromtimestamp(asset_info.get('last_updated', 0)).strftime('%Y-%m-%d %H:%M') if asset_info.get('last_updated') else 'never'}."
+                })
+        
+        # Help and onboarding
+        elif 'help' in user_input or 'how' in user_input:
+            return jsonify({
+                'reply': """I can help you with OriginLedger! Try asking:
+• 'Where is asset PRD-2024-001?' - Track asset location and status
+• 'Status of asset 12345' - Get current asset status
+• 'How do I register?' - Learn about participant registration
+• 'How do I add an event?' - Learn about recording supply chain events
+• 'What participants are registered?' - See current participants"""
+            })
+        
+        # Registration instructions
+        elif 'register' in user_input or 'participant' in user_input:
+            participant_count = len(participants)
+            roles = ['manufacturer', 'shipper', 'retailer', 'other']
+            return jsonify({
+                'reply': f"To register as a participant, use the 'Add Participant' button in the Participants section. You can register as: {', '.join(roles)}. Currently {participant_count} participants are registered."
+            })
+        
+        # Event adding instructions
+        elif 'add' in user_input and ('event' in user_input or 'shipment' in user_input):
+            return jsonify({
+                'reply': "To add a supply chain event, go to the 'Add Event' section. You'll need: participant name, action type (manufactured, shipped, received, etc.), asset ID, and optional location/metadata. Events are automatically added to the blockchain."
+            })
+        
+        # Participants query
+        elif 'participants' in user_input and 'who' in user_input:
+            if participants:
+                participant_list = [f"{user} ({role})" for user, role in participants.items()]
+                return jsonify({
+                    'reply': f"Registered participants: {', '.join(participant_list[:5])}{'...' if len(participant_list) > 5 else ''}. Total: {len(participants)} participants."
+                })
+            else:
+                return jsonify({
+                    'reply': "No participants are currently registered. Use the 'Add Participant' button to register the first participant."
+                })
+        
+        # Blockchain info
+        elif 'blockchain' in user_input or 'blocks' in user_input:
+            chain_length = len(blockchain.chain)
+            is_valid = blockchain.validate_chain()
+            return jsonify({
+                'reply': f"OriginLedger blockchain has {chain_length} blocks and is {'valid' if is_valid else 'invalid'}. Total events recorded: {len(events_history)}."
+            })
+        
+        # Greeting
+        elif any(greeting in user_input for greeting in ['hello', 'hi', 'hey']):
+            return jsonify({
+                'reply': "Hello! I'm the OriginLedger assistant. I can help you track assets, understand how to use the platform, and answer questions about your supply chain. What would you like to know?"
+            })
+        
+        # Default fallback
+        else:
+            return jsonify({
+                'reply': "I didn't understand that question. Try asking about asset tracking ('Where is asset 12345?'), platform help ('How do I register?'), or say 'help' for more options."
+            })
+        
+    except Exception as e:
+        return jsonify({'error': f'Chatbot error: {str(e)}'}), 500
+
+# ============================================================================
 # APPLICATION ENTRY POINT
 # ============================================================================
 

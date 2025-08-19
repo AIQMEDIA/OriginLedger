@@ -7,7 +7,8 @@ import {
   Plus, 
   Code,
   Link as LinkIcon,
-  User
+  User,
+  MessageCircle
 } from "lucide-react";
 
 const navigationItems = [
@@ -16,6 +17,7 @@ const navigationItems = [
   { path: "/assets", label: "Asset Tracking", icon: Package },
   { path: "/participants", label: "Participants", icon: Users },
   { path: "/events", label: "Add Event", icon: Plus },
+  { path: "/chat", label: "AI Assistant", icon: MessageCircle },
   { path: "/api-docs", label: "API Docs", icon: Code },
 ];
 

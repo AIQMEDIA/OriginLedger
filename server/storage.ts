@@ -84,8 +84,11 @@ export class MemStorage implements IStorage {
   async createParticipant(insertParticipant: InsertParticipant): Promise<Participant> {
     const id = randomUUID();
     const participant: Participant = { 
-      ...insertParticipant, 
       id,
+      role: insertParticipant.role,
+      username: insertParticipant.username,
+      status: insertParticipant.status || 'active',
+      email: insertParticipant.email || null,
       createdAt: new Date()
     };
     this.participants.set(id, participant);
@@ -150,8 +153,13 @@ export class MemStorage implements IStorage {
     const id = randomUUID();
     const now = new Date();
     const asset: Asset = { 
-      ...insertAsset, 
       id,
+      name: insertAsset.name,
+      assetId: insertAsset.assetId,
+      category: insertAsset.category || null,
+      currentStatus: insertAsset.currentStatus || 'created',
+      currentLocation: insertAsset.currentLocation || null,
+      batch: insertAsset.batch || null,
       createdAt: now,
       updatedAt: now
     };
@@ -183,9 +191,14 @@ export class MemStorage implements IStorage {
   async createEvent(insertEvent: InsertEvent): Promise<Event> {
     const id = randomUUID();
     const event: Event = { 
-      ...insertEvent, 
       id,
-      timestamp: new Date()
+      action: insertEvent.action,
+      timestamp: new Date(),
+      metadata: insertEvent.metadata || {},
+      assetId: insertEvent.assetId || null,
+      blockId: insertEvent.blockId || null,
+      participantId: insertEvent.participantId || null,
+      location: insertEvent.location || null
     };
     this.events.set(id, event);
     return event;

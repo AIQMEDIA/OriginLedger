@@ -1,0 +1,66 @@
+Here’s a simple,Here’s a copy-and-paste-ready chatbot addition for your Flask-based Replit MVP. This bot focuses on instant support and blockchain asset/event status by integrating with your earlier schema. It’s lightweight, using simple logic that can be expanded later.
+
+Install (in Replit “Packages”):
+
+flask
+
+flask_cors
+(optional, for local frontend testing)
+
+python
+# Add these imports at the top of your main.py
+from flask_cors import CORS
+
+# After: app = Flask(__name__)
+CORS(app)  # allow simple testing from web clients
+
+# --- Chatbot Route ---
+@app.route('/chatbot', methods=['POST'])
+def chatbot():
+    user_in = request.json.get('message', '').strip().lower()
+    asset_id = None
+
+    # Check for asset tracking queries
+    if 'where' in user_in and 'asset' in user_in:
+        # Try to extract asset_id using a simple number finder (expand as needed)
+        import re
+        search = re.findall(r'\d+', user_in)
+        asset_id = search[0] if search else None
+        if asset_id:
+            results = [b for b in blockchain.get_chain() if b['data'].get('asset_id') == asset_id]
+            if results:
+                events = [{"timestamp": b['timestamp'], "action": b['data']['action'], "by": b['data']['user']} for b in results]
+                return jsonify({"reply": f"Asset {asset_id} events: {events}"})
+            else:
+                return jsonify({"reply": f"No events found for asset {asset_id}."})
+
+    # Help and onboarding
+    elif 'help' in user_in or 'how' in user_in:
+        return jsonify({"reply": "You can ask:\n- 'Where is asset [ID]?' to track supply chain events.\n- 'How do I add a shipment?' or 'How do I register?'"})
+
+    # Register/adding instructions
+    elif 'register' in user_in:
+        return jsonify({"reply": "To register, POST your user and role to /register endpoint."})
+    elif 'add' in user_in and 'event' in user_in:
+        return jsonify({"reply": "To add an event, POST user, action, asset_id, and meta to /add-event."})
+
+    # Default fallback
+    return jsonify({"reply": "Sorry, I didn't understand. Try 'help' or ask about specific assets."})
+
+# Example test with:
+# POST {"message": "Where is asset 12345?"} to /chatbot
+How to Use:
+
+Add above after your other endpoints in main.py.
+
+POST text like {"message": "Where is asset 12345?"} to /chatbot endpoint.
+
+The bot can answer:
+
+Asset/event status queries (“Where is asset 12345?”)
+
+Usage/onboarding help (“How do I add a shipment?”)
+
+Registration and data entry reminders
+
+Extend by adding more replies, FAQ responses, or integrating with a UI. For advanced NLP or a richer experience, consider connecting to a service like OpenAI/GPT API, but this starter works for instant, low-lift support and status checks.
