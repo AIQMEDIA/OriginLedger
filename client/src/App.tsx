@@ -18,6 +18,7 @@ import ApiDocs from "@/pages/api-docs";
 import Audit from "@/pages/audit";
 import Testing from "@/pages/testing";
 import Profile from "@/pages/profile";
+import RoleDemo from "@/pages/role-demo";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -58,6 +59,7 @@ function Router() {
             </RoleGuard>
           </Route>
           
+          <Route path="/role-demo" component={RoleDemo} />
           <Route path="/api-docs" component={ApiDocs} />
           <Route component={NotFound} />
         </Switch>

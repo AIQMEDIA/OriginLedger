@@ -93,6 +93,12 @@ const navigationItems: NavigationItem[] = [
     label: "Support Chat",
     icon: MessageCircle,
     requireAuth: false
+  },
+  {
+    path: "/role-demo",
+    label: "Role Demo",
+    icon: Shield,
+    requireAuth: false
   }
 ];
 
