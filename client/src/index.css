@@ -1,0 +1,144 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --primary: hsl(210, 83%, 53%);
+  --secondary: hsl(210, 25%, 26%);
+  --accent: hsl(142, 100%, 39%);
+  --warning: hsl(36, 100%, 55%);
+  --error: hsl(4, 90%, 58%);
+  
+  --background: hsl(0, 0%, 100%);
+  --foreground: hsl(210, 25%, 7.8431%);
+  --card: hsl(0, 0%, 100%);
+  --card-foreground: hsl(210, 25%, 7.8431%);
+  --popover: hsl(0, 0%, 100%);
+  --popover-foreground: hsl(210, 25%, 7.8431%);
+  --primary-foreground: hsl(0, 0%, 100%);
+  --secondary-foreground: hsl(0, 0%, 100%);
+  --muted: hsl(210, 40%, 96%);
+  --muted-foreground: hsl(215, 15%, 46%);
+  --accent-foreground: hsl(0, 0%, 100%);
+  --destructive: hsl(4, 90%, 58%);
+  --destructive-foreground: hsl(0, 0%, 100%);
+  --border: hsl(214, 32%, 91%);
+  --input: hsl(214, 32%, 91%);
+  --ring: hsl(210, 83%, 53%);
+  --chart-1: hsl(210, 83%, 53%);
+  --chart-2: hsl(142, 100%, 39%);
+  --chart-3: hsl(36, 100%, 55%);
+  --chart-4: hsl(268, 83%, 58%);
+  --chart-5: hsl(340, 75%, 55%);
+  --sidebar: hsl(0, 0%, 100%);
+  --sidebar-foreground: hsl(210, 25%, 7.8431%);
+  --sidebar-primary: hsl(210, 83%, 53%);
+  --sidebar-primary-foreground: hsl(0, 0%, 100%);
+  --sidebar-accent: hsl(210, 40%, 96%);
+  --sidebar-accent-foreground: hsl(210, 83%, 53%);
+  --sidebar-border: hsl(214, 32%, 91%);
+  --sidebar-ring: hsl(210, 83%, 53%);
+  --font-sans: Inter, sans-serif;
+  --font-serif: Georgia, serif;
+  --font-mono: Menlo, monospace;
+  --radius: 0.75rem;
+  --shadow-2xs: 0px 1px 2px 0px hsl(0, 0%, 0%, 0.05);
+  --shadow-xs: 0px 1px 2px 0px hsl(0, 0%, 0%, 0.05);
+  --shadow-sm: 0px 1px 2px 0px hsl(0, 0%, 0%, 0.05), 0px 1px 3px 0px hsl(0, 0%, 0%, 0.1);
+  --shadow: 0px 1px 2px 0px hsl(0, 0%, 0%, 0.05), 0px 1px 3px 0px hsl(0, 0%, 0%, 0.1);
+  --shadow-md: 0px 4px 6px -1px hsl(0, 0%, 0%, 0.1), 0px 2px 4px -1px hsl(0, 0%, 0%, 0.06);
+  --shadow-lg: 0px 10px 15px -3px hsl(0, 0%, 0%, 0.1), 0px 4px 6px -2px hsl(0, 0%, 0%, 0.05);
+  --shadow-xl: 0px 20px 25px -5px hsl(0, 0%, 0%, 0.1), 0px 10px 10px -5px hsl(0, 0%, 0%, 0.04);
+  --shadow-2xl: 0px 25px 50px -12px hsl(0, 0%, 0%, 0.25);
+  --tracking-normal: 0em;
+  --spacing: 0.25rem;
+}
+
+.dark {
+  --background: hsl(0, 0%, 0%);
+  --foreground: hsl(210, 40%, 92%);
+  --card: hsl(210, 25%, 8%);
+  --card-foreground: hsl(210, 40%, 92%);
+  --popover: hsl(0, 0%, 0%);
+  --popover-foreground: hsl(210, 40%, 92%);
+  --primary: hsl(210, 83%, 53%);
+  --primary-foreground: hsl(0, 0%, 100%);
+  --secondary: hsl(210, 40%, 20%);
+  --secondary-foreground: hsl(210, 40%, 92%);
+  --muted: hsl(210, 40%, 15%);
+  --muted-foreground: hsl(215, 15%, 46%);
+  --accent: hsl(210, 40%, 15%);
+  --accent-foreground: hsl(210, 83%, 53%);
+  --destructive: hsl(4, 90%, 58%);
+  --destructive-foreground: hsl(0, 0%, 100%);
+  --border: hsl(210, 25%, 15%);
+  --input: hsl(210, 25%, 15%);
+  --ring: hsl(210, 83%, 53%);
+  --chart-1: hsl(210, 83%, 53%);
+  --chart-2: hsl(142, 100%, 39%);
+  --chart-3: hsl(36, 100%, 55%);
+  --chart-4: hsl(268, 83%, 58%);
+  --chart-5: hsl(340, 75%, 55%);
+  --sidebar: hsl(210, 25%, 8%);
+  --sidebar-foreground: hsl(210, 40%, 92%);
+  --sidebar-primary: hsl(210, 83%, 53%);
+  --sidebar-primary-foreground: hsl(0, 0%, 100%);
+  --sidebar-accent: hsl(210, 40%, 15%);
+  --sidebar-accent-foreground: hsl(210, 83%, 53%);
+  --sidebar-border: hsl(210, 25%, 15%);
+  --sidebar-ring: hsl(210, 83%, 53%);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased bg-background text-foreground;
+  }
+}
+
+.nav-item {
+  @apply flex items-center space-x-3 px-4 py-3 text-gray-600 hover:text-primary hover:bg-blue-50 dark:hover:bg-blue-950 rounded-lg transition-colors;
+}
+
+.nav-item.active {
+  @apply text-primary bg-blue-50 dark:bg-blue-950 font-medium;
+}
+
+.status-manufactured {
+  @apply bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200;
+}
+
+.status-shipped {
+  @apply bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200;
+}
+
+.status-delivered {
+  @apply bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200;
+}
+
+.status-in-transit {
+  @apply bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200;
+}
+
+.status-received {
+  @apply bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200;
+}
+
+.role-manufacturer {
+  @apply bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200;
+}
+
+.role-shipper {
+  @apply bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200;
+}
+
+.role-retailer {
+  @apply bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200;
+}
+
+.role-other {
+  @apply bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200;
+}
