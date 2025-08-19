@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertParticipantSchema, insertAssetSchema, type BlockchainData } from "@shared/schema";
 import { requireAuth, requireRole, optionalAuth, generateToken, checkPassword, hashPassword } from './auth';
+import { body, query, validationResult } from 'express-validator';
 import crypto from 'crypto';
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -13,17 +14,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     return crypto.createHash("sha256").update(content).digest("hex");
   };
 
-  // Authentication endpoints
-  app.post('/api/auth/login', async (req, res) => {
+  // Authentication endpoints with validation
+  app.post('/api/auth/login', [
+    body('username').notEmpty().withMessage('Username is required'),
+    body('password').isLength({ min: 1 }).withMessage('Password is required'),
+  ], async (req, res) => {
     try {
-      const { username, password } = req.body;
-      
-      if (!username || !password) {
+      // Check validation errors
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
         return res.status(400).json({ 
-          error: 'Username and password required',
-          code: 'MISSING_CREDENTIALS'
+          error: 'Validation failed',
+          code: 'VALIDATION_ERROR',
+          details: errors.array()
         });
       }
+
+      const { username, password } = req.body;
 
       // Find participant by username
       const participant = await storage.getParticipantByUsername(username);
@@ -110,18 +117,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
-  // Register a new participant (now with optional authentication)
-  app.post('/api/register', optionalAuth, async (req, res) => {
+  // Register a new participant with enhanced validation
+  app.post('/api/register', [
+    body('user').isLength({ min: 3 }).withMessage('Username must be at least 3 characters'),
+    body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
+    body('role').isIn(['manufacturer', 'shipper', 'retailer', 'other']).withMessage('Invalid role'),
+    body('email').isEmail().withMessage('Valid email is required'),
+  ], optionalAuth, async (req, res) => {
     try {
+      // Check validation errors
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ 
+          error: 'Validation failed',
+          code: 'VALIDATION_ERROR',
+          details: errors.array()
+        });
+      }
+
       const { user, role, email, password } = req.body;
-      
-      // Validate input
-      const participantData = insertParticipantSchema.parse({
-        username: user,
-        role: role,
-        email: email,
-        status: 'active'
-      });
       
       // Check if user already exists
       const existing = await storage.getParticipantByUsername(user);
@@ -132,24 +146,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
+      // Validate input
+      const participantData = insertParticipantSchema.parse({
+        username: user,
+        role: role,
+        email: email,
+        status: 'active'
+      });
+      
       // Create participant
       const participant = await storage.createParticipant(participantData);
       
-      // Set password if provided
-      if (password && password.length >= 6) {
-        const passwordHash = hashPassword(password);
-        await storage.updateParticipantPassword(participant.id, passwordHash);
-      }
+      // Set password
+      const passwordHash = hashPassword(password);
+      await storage.updateParticipantPassword(participant.id, passwordHash);
+      
+      // Generate token for immediate login
+      const token = generateToken({
+        id: participant.id,
+        username: participant.username,
+        role: participant.role
+      });
       
       res.status(201).json({ 
-        msg: `User ${user} registered as ${role}.`,
-        participant: {
+        message: `User ${user} registered successfully as ${role}`,
+        user: {
           id: participant.id,
           username: participant.username,
           role: participant.role,
           email: participant.email,
           status: participant.status
-        }
+        },
+        token // Include token for immediate login
       });
     } catch (error) {
       res.status(400).json({ 
@@ -397,46 +425,133 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get all assets with pagination and filtering
-  app.get('/api/assets', async (req, res) => {
+  // Enhanced asset filtering with validation and sorting
+  app.get('/api/assets', [
+    query('status').optional().isString().withMessage('Status must be a string'),
+    query('search').optional().isString().withMessage('Search must be a string'),
+    query('category').optional().isString().withMessage('Category must be a string'),
+    query('batch').optional().isString().withMessage('Batch must be a string'),
+    query('page').optional().isInt({ min: 1 }).withMessage('Page must be a positive integer'),
+    query('limit').optional().isInt({ min: 1, max: 100 }).withMessage('Limit must be between 1 and 100'),
+    query('sortBy').optional().isIn(['name', 'createdAt', 'updatedAt', 'currentStatus']).withMessage('Invalid sort field'),
+    query('sortOrder').optional().isIn(['asc', 'desc']).withMessage('Sort order must be asc or desc'),
+  ], optionalAuth, async (req, res) => {
     try {
-      const { page = '1', limit = '20', status, search, category } = req.query;
-      const pageNum = Math.max(1, parseInt(page as string));
-      const limitNum = Math.max(1, Math.min(100, parseInt(limit as string))); // Cap at 100
-      
-      let assets = await storage.getAllAssets();
-      
-      // Apply filters
-      if (status) {
-        assets = assets.filter(asset => asset.currentStatus === status);
+      // Check validation errors
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ 
+          error: 'Validation failed',
+          code: 'VALIDATION_ERROR',
+          details: errors.array()
+        });
       }
-      if (search) {
-        const searchLower = (search as string).toLowerCase();
-        assets = assets.filter(asset => 
-          asset.assetId.toLowerCase().includes(searchLower) ||
-          asset.name.toLowerCase().includes(searchLower)
+
+      const { 
+        status, 
+        search, 
+        category, 
+        batch,
+        page = '1', 
+        limit = '20',
+        sortBy = 'createdAt',
+        sortOrder = 'desc'
+      } = req.query;
+
+      const pageNum = Math.max(1, parseInt(page as string));
+      const limitNum = Math.max(1, Math.min(100, parseInt(limit as string)));
+      
+      // Get all assets
+      let allAssets = await storage.getAllAssets();
+      
+      // Apply enhanced filters
+      if (status) {
+        allAssets = allAssets.filter(asset => 
+          asset.currentStatus.toLowerCase().includes((status as string).toLowerCase())
         );
       }
-      if (category) {
-        assets = assets.filter(asset => asset.category === category);
+      
+      if (search) {
+        const searchTerm = (search as string).toLowerCase();
+        allAssets = allAssets.filter(asset => 
+          asset.name.toLowerCase().includes(searchTerm) ||
+          asset.assetId.toLowerCase().includes(searchTerm) ||
+          (asset.category && asset.category.toLowerCase().includes(searchTerm)) ||
+          (asset.currentLocation && asset.currentLocation.toLowerCase().includes(searchTerm))
+        );
       }
       
+      if (category) {
+        allAssets = allAssets.filter(asset => 
+          asset.category && asset.category.toLowerCase().includes((category as string).toLowerCase())
+        );
+      }
+      
+      if (batch) {
+        allAssets = allAssets.filter(asset => 
+          asset.batch && asset.batch.toLowerCase().includes((batch as string).toLowerCase())
+        );
+      }
+      
+      // Apply sorting
+      allAssets.sort((a, b) => {
+        let aValue: any;
+        let bValue: any;
+        
+        switch (sortBy) {
+          case 'name':
+            aValue = a.name.toLowerCase();
+            bValue = b.name.toLowerCase();
+            break;
+          case 'createdAt':
+            aValue = new Date(a.createdAt);
+            bValue = new Date(b.createdAt);
+            break;
+          case 'updatedAt':
+            aValue = new Date(a.updatedAt);
+            bValue = new Date(b.updatedAt);
+            break;
+          case 'currentStatus':
+            aValue = a.currentStatus.toLowerCase();
+            bValue = b.currentStatus.toLowerCase();
+            break;
+          default:
+            aValue = new Date(a.createdAt);
+            bValue = new Date(b.createdAt);
+        }
+        
+        if (sortOrder === 'desc') {
+          return aValue > bValue ? -1 : aValue < bValue ? 1 : 0;
+        } else {
+          return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
+        }
+      });
+      
       // Apply pagination
-      const startIndex = (pageNum - 1) * limitNum;
-      const endIndex = startIndex + limitNum;
-      const paginatedAssets = assets.slice(startIndex, endIndex);
+      const offset = (pageNum - 1) * limitNum;
+      const total = allAssets.length;
+      const paginatedAssets = allAssets.slice(offset, offset + limitNum);
       
       res.json({
         assets: paginatedAssets,
         pagination: {
           page: pageNum,
           limit: limitNum,
-          total: assets.length,
-          totalPages: Math.ceil(assets.length / limitNum),
-          hasNext: endIndex < assets.length,
+          total,
+          totalPages: Math.ceil(total / limitNum),
+          hasNext: offset + limitNum < total,
           hasPrev: pageNum > 1
+        },
+        filters: {
+          status,
+          search,
+          category,
+          batch,
+          sortBy,
+          sortOrder
         }
       });
+
     } catch (error) {
       res.status(500).json({ 
         error: 'Failed to retrieve assets',

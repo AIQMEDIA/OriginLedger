@@ -1,0 +1,222 @@
+Here are all three: a copy-paste React login/signup modal, a robust asset search UI, and an end-to-end backend test. Each is designed for immediate integration in your OriginLedger project.
+
+1. React Login/Signup Modal (TypeScript, Tailwind, Headless UI)
+Install:
+
+bash
+npm install @headlessui/react
+components/AuthModal.tsx
+
+tsx
+import React, { useState } from "react";
+import { Dialog } from "@headlessui/react";
+import { login, register } from "../lib/api"; // Use functions from your api.ts
+
+type Props = {
+  open: boolean;
+  onClose: () => void;
+  onSuccess: (token: string, user: any) => void;
+};
+export const AuthModal: React.FC<Props> = ({ open, onClose, onSuccess }) => {
+  const [mode, setMode] = useState<"login" | "signup">("login");
+  const [form, setForm] = useState({ username: "", password: "", role: "manufacturer" });
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
+    setForm({ ...form, [e.target.name]: e.target.value });
+
+  const onSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+    try {
+      const fn = mode === "login" ? login : register;
+      const res = mode === "login"
+        ? await fn(form.username, form.password)
+        : await fn(form.username, form.password, form.role);
+      onSuccess(res.token, res.user);
+      onClose();
+    } catch (err: any) {
+      setError(err.response?.data?.error || err.message || "Login failed");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onClose={onClose} className="relative z-30">
+      <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
+      <div className="fixed inset-0 flex items-center justify-center">
+        <Dialog.Panel className="bg-white shadow-lg rounded-lg p-6 w-80">
+          <Dialog.Title className="text-lg font-bold mb-2">{mode === "login" ? "Sign In" : "Sign Up"}</Dialog.Title>
+          <form onSubmit={onSubmit} className="space-y-3">
+            <input
+              className="border w-full px-3 py-2 rounded"
+              placeholder="Username"
+              name="username"
+              value={form.username}
+              onChange={handleChange}
+              required
+            />
+            <input
+              className="border w-full px-3 py-2 rounded"
+              placeholder="Password"
+              type="password"
+              name="password"
+              value={form.password}
+              onChange={handleChange}
+              required
+            />
+            {mode === "signup" && (
+              <select name="role" className="border w-full px-3 py-2 rounded" value={form.role} onChange={handleChange}>
+                <option value="manufacturer">Manufacturer</option>
+                <option value="shipper">Shipper</option>
+                <option value="retailer">Retailer</option>
+                <option value="auditor">Auditor</option>
+              </select>
+            )}
+            {error && <div className="text-red-500 text-sm">{error}</div>}
+            <button
+              className="bg-blue-600 text-white w-full py-2 rounded mt-2"
+              type="submit"
+              disabled={loading}
+            >
+              {loading ? "Processing..." : (mode === "login" ? "Sign In" : "Create Account")}
+            </button>
+          </form>
+          <div className="mt-4 flex justify-between text-xs">
+            <span>
+              {mode === "login" ? "No account?" : "Have an account?"}
+              <button
+                className="text-blue-600 ml-2"
+                type="button"
+                onClick={() => setMode(mode === "login" ? "signup" : "login")}
+              >
+                {mode === "login" ? "Sign Up" : "Sign In"}
+              </button>
+            </span>
+            <button className="text-gray-500" onClick={onClose}>Close</button>
+          </div>
+        </Dialog.Panel>
+      </div>
+    </Dialog>
+  );
+};
+2. Asset Search UI (React + TanStack Query)
+components/AssetSearch.tsx
+
+tsx
+import React, { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { api } from "../lib/api";
+
+export const AssetSearch: React.FC = () => {
+  const [search, setSearch] = useState("");
+  const [category, setCategory] = useState("");
+  const [status, setStatus] = useState("");
+  const [page, setPage] = useState(1);
+
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["assets", { search, category, status, page }],
+    queryFn: () =>
+      api.getAssets({ search, category, status, page, limit: 10 }),
+  });
+
+  return (
+    <div className="space-y-4">
+      <div className="flex gap-2">
+        <input className="border px-2 py-1 rounded" placeholder="Search by name..." value={search} onChange={e => setSearch(e.target.value)} />
+        <select className="border px-2 py-1 rounded" value={category} onChange={e => setCategory(e.target.value)}>
+          <option value="">All Categories</option>
+          <option value="Food">Food</option>
+          <option value="Pharma">Pharma</option>
+          <option value="Luxury">Luxury</option>
+        </select>
+        <select className="border px-2 py-1 rounded" value={status} onChange={e => setStatus(e.target.value)}>
+          <option value="">All Status</option>
+          <option value="manufactured">Manufactured</option>
+          <option value="shipped">Shipped</option>
+          <option value="delivered">Delivered</option>
+        </select>
+        <button
+          className="bg-blue-600 text-white px-3 py-1 rounded"
+          onClick={() => setPage(1)}
+        >Search</button>
+      </div>
+      {isLoading && <div>Loading...</div>}
+      {error && <div className="text-red-600">{String(error)}</div>}
+      {data && (
+        <div>
+          <table className="w-full border text-sm">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Asset ID</th>
+                <th>Status</th>
+                <th>Category</th>
+                <th>Location</th>
+                <th>Batch</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.map((asset) => (
+                <tr key={asset.assetId}>
+                  <td>{asset.name}</td>
+                  <td>{asset.assetId}</td>
+                  <td>{asset.currentStatus}</td>
+                  <td>{asset.category}</td>
+                  <td>{asset.currentLocation}</td>
+                  <td>{asset.batch}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <div className="flex gap-2 mt-2">
+            <button disabled={page === 1} onClick={() => setPage(p => p - 1)}>&lt; Prev</button>
+            <span>Page {page}</span>
+            <button disabled={data.length < 10} onClick={() => setPage(p => p + 1)}>Next &gt;</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+3. End-to-End Test Case (Jest + supertest)
+Install:
+
+bash
+npm install --save-dev jest supertest
+tests/auth-flow.spec.ts
+
+typescript
+import request from "supertest";
+import app from "../server/index"; // Your Express app
+
+describe("OriginLedger Auth & Asset API", () => {
+  let token = "";
+  it("registers and logs in user", async () => {
+    const registerRes = await request(app)
+      .post("/api/register")
+      .send({ username: "testuser", password: "Testpass123", role: "manufacturer" });
+    expect(registerRes.status).toBe(201);
+    expect(registerRes.body.token).toBeDefined();
+
+    const loginRes = await request(app)
+      .post("/api/login")
+      .send({ username: "testuser", password: "Testpass123" });
+    expect(loginRes.status).toBe(200);
+    token = loginRes.body.token;
+    expect(token).toBeDefined();
+  });
+
+  it("returns filtered asset results (requires auth)", async () => {
+    const res = await request(app)
+      .get("/api/assets")
+      .query({ status: "manufactured" })
+      .set("Authorization", `Bearer ${token}`);
+    expect(res.status).toBe(200);
+    expect(Array.isArray(res.body)).toBe(true);
+  });
+});
+Let me know if you want these adapted to your specific codebase, or if you need a different form/UI library!
