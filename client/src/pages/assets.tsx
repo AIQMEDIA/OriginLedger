@@ -1,28 +1,18 @@
-import { useQuery } from "@tanstack/react-query";
-import { api } from "@/lib/api";
-import AssetSearch from "@/components/assets/asset-search";
-import AssetList from "@/components/assets/asset-list";
-import { useState } from "react";
+import { AssetSearch } from "@/components/assets/asset-search";
 
 export default function Assets() {
-  const [searchParams, setSearchParams] = useState<{
-    status?: string;
-    search?: string;
-  }>({});
-
-  const { data: assetsData, isLoading } = useQuery({
-    queryKey: ['/api/assets', searchParams],
-    queryFn: () => api.getAssets(searchParams),
-  });
-
   return (
     <div className="space-y-6">
-      <AssetSearch onSearch={setSearchParams} />
-      <AssetList 
-        assets={assetsData?.assets || []} 
-        isLoading={isLoading}
-        totalCount={assetsData?.total_count || 0}
-      />
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-3xl font-bold text-secondary dark:text-white">Asset Tracking</h2>
+          <p className="text-gray-600 dark:text-gray-400 mt-1">
+            Search and manage supply chain assets with advanced filtering
+          </p>
+        </div>
+      </div>
+
+      <AssetSearch />
     </div>
   );
 }
