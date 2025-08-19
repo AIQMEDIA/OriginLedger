@@ -883,6 +883,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Import and mount subscription routes
+  const subscriptionRoutes = await import('./subscription-routes');
+  app.use("/api/subscription", subscriptionRoutes.default);
+
   const httpServer = createServer(app);
   return httpServer;
 }

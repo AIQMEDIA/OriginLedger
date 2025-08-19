@@ -1,0 +1,45 @@
+For an enterprise-ready blockchain supply chain solution like OriginLedger, the standard subscription pricing model typically includes tiered plans based on users, assets, and feature sets. Here’s a realistic structure for 2025:
+
+Enterprise SaaS Subscription Pricing Benchmarks
+Free Trial:
+
+14–30 days with full feature access (limited users/assets).
+
+Goal: Convert enterprise pilot teams by demonstrating ROI.
+
+Common Paid Plans (per user per month or per asset per month)
+Plan Type	Typical Price (2025)	Features
+Business	$50–100/user/month	Advanced tracking, reporting, integrations, priority email support, up to 500 assets
+Enterprise	$150–200+/user/month	Custom integrations, SSO, dedicated account manager, advanced security, multi-region support, unlimited assets
+Asset-Based	$0.50–$2/asset/month	Large enterprise, volume pricing for high asset counts
+Custom/Private	Negotiated — $5,000–50,000+/mo	API-only, on-premises, or consortia; unlimited users, audit tools, custom SLA
+Annual contracts are standard, often with a discount (8–15%) for yearly pre-payments.
+
+Implementation/setup fees ($5,000–$20,000) may apply for enterprise onboarding, but many SaaS providers waive these for long-term or high-value clients.
+
+Feature Triggers for Higher Pricing
+On-chain document storage or complex integrations (ERP, IoT)
+
+AI audit or compliance automation (GDPR/ESG features)
+
+Dedicated support, private tenant deployments
+
+Strategic Options
+Start Enterprise at ~$150/user/month or $1/asset/month; offer volume discounts for >100 users/assets.
+
+Target ROI outcomes in your sales pitch: fraud reduction, process efficiency, audit-readiness.
+
+Consider usage-based pricing for very large enterprises, or custom contracts for regulatory-heavy industries.
+
+Bundle additional compliance or analytics modules as premium add-ons.
+
+Final Advice
+Enterprises expect:
+
+Per-user/month contracts with advanced features, priority support, security
+
+Transparent upgrade path and clear value for additional spend
+
+Easy pilot-to-paid transition (seamless conversion from trial)
+
+Review your competitors and verticals, then refine based on value delivered and willingness-to-pay interviews as you onboard early clients. This ensures a competitive and resonant pricing structure for OriginLedger.

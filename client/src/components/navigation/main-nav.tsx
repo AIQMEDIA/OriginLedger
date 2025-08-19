@@ -30,7 +30,8 @@ import {
   BarChart3,
   Moon,
   Sun,
-  HelpCircle
+  HelpCircle,
+  CreditCard
 } from "lucide-react";
 
 interface NavigationItem {
@@ -96,9 +97,15 @@ const navigationItems: NavigationItem[] = [
   },
   {
     path: "/role-demo",
-    label: "Role Demo",
+    label: "Role Demo", 
     icon: Shield,
     requireAuth: false
+  },
+  {
+    path: "/subscription",
+    label: "Subscription",
+    icon: CreditCard,
+    requireAuth: true
   }
 ];
 

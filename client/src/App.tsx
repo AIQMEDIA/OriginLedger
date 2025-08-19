@@ -19,6 +19,7 @@ import Audit from "@/pages/audit";
 import Testing from "@/pages/testing";
 import Profile from "@/pages/profile";
 import RoleDemo from "@/pages/role-demo";
+import Subscription from "@/pages/subscription";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -60,6 +61,11 @@ function Router() {
           </Route>
           
           <Route path="/role-demo" component={RoleDemo} />
+          <Route path="/subscription">
+            <RoleGuard requireAuth={true}>
+              <Subscription />
+            </RoleGuard>
+          </Route>
           <Route path="/api-docs" component={ApiDocs} />
           <Route component={NotFound} />
         </Switch>
