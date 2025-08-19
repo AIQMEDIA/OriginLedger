@@ -1,0 +1,112 @@
+A full end-to-end supply chain blockchain app is quite extensive, but here's a curated, highly copy/paste-friendly starter schema to help you launch a working MVP on Replit. This includes the basic structure (backend, blockchain logic, and simple API), using Python and Flask—great for quick prototyping on Replit.
+
+This schema provides:
+
+A minimal blockchain class storing “supply chain events”
+
+REST endpoints for onboarding participants, adding/transferring goods, and retrieving chain records
+
+In-memory structures (upgrade to database for production)
+
+Modular code (easy to scale/migrate later)
+
+python
+# main.py - Supply Chain Blockchain MVP for Replit
+
+from flask import Flask, request, jsonify
+import hashlib
+import time
+
+app = Flask(__name__)
+
+# --- Simple Blockchain Core ---
+class Block:
+    def __init__(self, index, timestamp, data, prev_hash):
+        self.index = index
+        self.timestamp = timestamp
+        self.data = data
+        self.prev_hash = prev_hash
+        self.hash = self.hash_block()
+
+    def hash_block(self):
+        h = hashlib.sha256()
+        h.update(f"{self.index}{self.timestamp}{str(self.data)}{self.prev_hash}".encode('utf-8'))
+        return h.hexdigest()
+
+class Blockchain:
+    def __init__(self):
+        self.chain = [self.create_genesis_block()]
+
+    def create_genesis_block(self):
+        return Block(0, time.time(), {"action": "genesis"}, "0")
+
+    def add_block(self, data):
+        last_block = self.chain[-1]
+        return self.chain.append(
+            Block(len(self.chain), time.time(), data, last_block.hash)
+        )
+
+    def get_chain(self):
+        return [vars(block) for block in self.chain]
+
+blockchain = Blockchain()
+users = {}  # Simple in-memory user store {user:role}
+
+# --- Endpoints ---
+@app.route('/register', methods=['POST'])
+def register():
+    user = request.json.get('user')
+    role = request.json.get('role')
+    users[user] = role
+    return jsonify({'msg': f'User {user} registered as {role}.'}), 201
+
+@app.route('/add-event', methods=['POST'])
+def add_event():
+    user = request.json.get('user')
+    action = request.json.get('action')
+    asset_id = request.json.get('asset_id')
+    meta = request.json.get('meta', {})
+    if user not in users:
+        return jsonify({'error': 'Unauthorized. Register first.'}), 403
+    data = {"user": user, "role": users[user], "action": action, "asset_id": asset_id, "meta": meta}
+    blockchain.add_block(data)
+    return jsonify({'msg': 'Event added.', 'block': vars(blockchain.chain[-1])})
+
+@app.route('/chain', methods=['GET'])
+def chain_api():
+    return jsonify(blockchain.get_chain())
+
+@app.route('/participants', methods=['GET'])
+def participants_api():
+    return jsonify(users)
+
+# --- Run the app ---
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=81, debug=True)
+Usage How-to:
+
+Deploy this script in a Replit Python Flask environment.
+
+Use /register (POST) to onboard users (as manufacturers, shippers, retailers, etc).
+
+Use /add-event (POST) to record supply chain actions: e.g., “manufactured”, “shipped”, “received”, with asset metadata (QR/barcode, batch, location, etc).
+
+/chain (GET) returns the full supply chain ledger for transparency.
+
+/participants (GET) lists all onboarded users.
+
+Integrate basic trial/usage limits and privacy features for live pilots.
+
+Extensible for:
+
+QR/barcode scan webhook integration
+
+Role-based permissions
+
+Off-chain file hashes (certificates, images)
+
+Upgrade data storage for scale
+
+Note: This is a secure, auditable MVP skeleton—enough for demo, pilots, or small trials, especially for food, pharma, or luxury good proofs on Replit. For production/distribution, you’ll want to add a proper DB, robust authentication, and hosting outside Replit if you hit scale limits.
+
+Let me know if you want fully annotated code, front-end starter, or scale migration advice
