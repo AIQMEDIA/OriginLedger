@@ -1,8 +1,8 @@
-# ChainTrack - Supply Chain Blockchain Platform
+# OriginLedger - Supply Chain Blockchain Platform
 
 ## Overview
 
-ChainTrack is a comprehensive supply chain blockchain platform that enables tracking of assets, management of participants, and ensures transparency across the entire supply chain network. The application provides a simple but functional blockchain implementation for tracking assets through various stages of the supply chain, from manufacturing to delivery.
+OriginLedger is a comprehensive supply chain blockchain platform that enables tracking of assets, management of participants, and ensures transparency across the entire supply chain network. The application provides a simple but functional blockchain implementation for tracking assets through various stages of the supply chain, from manufacturing to delivery.
 
 The platform features a React-based frontend with a TypeScript Express backend, utilizing in-memory storage for blockchain data with the capability to upgrade to PostgreSQL using Drizzle ORM. The system supports participant management across different roles (manufacturers, shippers, retailers), asset tracking with metadata support, and comprehensive event logging with blockchain integrity verification.
 

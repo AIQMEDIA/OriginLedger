@@ -31,7 +31,7 @@ export default function Sidebar() {
             <LinkIcon className="text-white text-lg" size={20} />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-secondary dark:text-white">ChainTrack</h1>
+            <h1 className="text-xl font-bold text-secondary dark:text-white">OriginLedger</h1>
             <p className="text-sm text-gray-500 dark:text-gray-400">Supply Chain Platform</p>
           </div>
         </div>

@@ -102,7 +102,7 @@ response = requests.post('http://localhost:8000/api/add-event',
     },
     headers={'Content-Type': 'application/json'})`,
   
-  javascript: `const ChainTrackAPI = {
+  javascript: `const OriginLedgerAPI = {
   baseURL: 'http://localhost:8000/api',
   
   async addEvent(eventData) {
@@ -118,7 +118,7 @@ response = requests.post('http://localhost:8000/api/add-event',
 };
 
 // Usage
-ChainTrackAPI.addEvent({
+OriginLedgerAPI.addEvent({
   user: 'MyCompany',
   action: 'shipped',
   asset_id: 'PRD-2024-001',

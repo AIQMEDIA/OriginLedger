@@ -115,7 +115,7 @@ class Blockchain:
         genesis_block = Block(
             index=0,
             timestamp=time.time(),
-            data={"action": "genesis", "message": "Supply Chain Blockchain Initialized"},
+            data={"action": "genesis", "message": "OriginLedger Blockchain Initialized"},
             prev_hash="0"
         )
         self.chain.append(genesis_block)
