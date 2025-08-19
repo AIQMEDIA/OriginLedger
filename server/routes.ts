@@ -99,19 +99,110 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get the complete blockchain
+  // Get the complete blockchain with pagination
   app.get('/api/chain', async (req, res) => {
     try {
+      const { page = '1', limit = '10' } = req.query;
+      const pageNum = Math.max(1, parseInt(page as string));
+      const limitNum = Math.max(1, Math.min(50, parseInt(limit as string))); // Cap at 50
+      
       const blockchain = await storage.getBlockchain();
-      res.json(blockchain.map(block => ({
-        index: block.index,
-        timestamp: block.timestamp,
-        data: block.data,
-        prev_hash: block.prevHash,
-        hash: block.hash
-      })));
+      
+      // Apply pagination (reverse order for newest first)
+      const reversedChain = [...blockchain].reverse();
+      const startIndex = (pageNum - 1) * limitNum;
+      const endIndex = startIndex + limitNum;
+      const paginatedBlocks = reversedChain.slice(startIndex, endIndex);
+      
+      res.json({
+        blocks: paginatedBlocks.map(block => ({
+          index: block.index,
+          timestamp: block.timestamp,
+          data: block.data,
+          prev_hash: block.prevHash,
+          hash: block.hash
+        })),
+        pagination: {
+          page: pageNum,
+          limit: limitNum,
+          total: blockchain.length,
+          totalPages: Math.ceil(blockchain.length / limitNum),
+          hasNext: endIndex < blockchain.length,
+          hasPrev: pageNum > 1
+        }
+      });
     } catch (error) {
-      res.status(500).json({ error: 'Failed to retrieve blockchain' });
+      res.status(500).json({ 
+        error: 'Failed to retrieve blockchain',
+        code: 'BLOCKCHAIN_FETCH_ERROR',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  // Chain validation endpoint
+  app.get('/api/chain/validate', async (req, res) => {
+    try {
+      const blockchain = await storage.getBlockchain();
+      
+      if (blockchain.length === 0) {
+        return res.json({ 
+          valid: false, 
+          error: 'Empty blockchain',
+          code: 'EMPTY_CHAIN'
+        });
+      }
+      
+      // Validate genesis block
+      if (blockchain[0].index !== 0 || blockchain[0].prevHash !== "0") {
+        return res.json({ 
+          valid: false, 
+          error: 'Invalid genesis block',
+          code: 'INVALID_GENESIS',
+          blockIndex: 0
+        });
+      }
+      
+      // Validate chain integrity
+      for (let i = 1; i < blockchain.length; i++) {
+        const currentBlock = blockchain[i];
+        const previousBlock = blockchain[i - 1];
+        
+        // Check if current block's prevHash matches previous block's hash
+        if (currentBlock.prevHash !== previousBlock.hash) {
+          return res.json({ 
+            valid: false, 
+            error: 'Hash chain broken',
+            code: 'BROKEN_CHAIN',
+            blockIndex: i,
+            expected: previousBlock.hash,
+            actual: currentBlock.prevHash
+          });
+        }
+        
+        // Check if index is sequential
+        if (currentBlock.index !== previousBlock.index + 1) {
+          return res.json({ 
+            valid: false, 
+            error: 'Non-sequential block index',
+            code: 'INVALID_INDEX',
+            blockIndex: i
+          });
+        }
+      }
+      
+      res.json({ 
+        valid: true, 
+        totalBlocks: blockchain.length,
+        lastBlockHash: blockchain[blockchain.length - 1].hash,
+        validatedAt: new Date().toISOString()
+      });
+    } catch (error) {
+      res.status(500).json({ 
+        error: 'Chain validation failed',
+        code: 'VALIDATION_ERROR',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
     }
   });
 
@@ -161,13 +252,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get all assets
+  // Get all assets with pagination and filtering
   app.get('/api/assets', async (req, res) => {
     try {
-      const assets = await storage.getAllAssets();
-      res.json(assets);
+      const { page = '1', limit = '20', status, search, category } = req.query;
+      const pageNum = Math.max(1, parseInt(page as string));
+      const limitNum = Math.max(1, Math.min(100, parseInt(limit as string))); // Cap at 100
+      
+      let assets = await storage.getAllAssets();
+      
+      // Apply filters
+      if (status) {
+        assets = assets.filter(asset => asset.currentStatus === status);
+      }
+      if (search) {
+        const searchLower = (search as string).toLowerCase();
+        assets = assets.filter(asset => 
+          asset.assetId.toLowerCase().includes(searchLower) ||
+          asset.name.toLowerCase().includes(searchLower)
+        );
+      }
+      if (category) {
+        assets = assets.filter(asset => asset.category === category);
+      }
+      
+      // Apply pagination
+      const startIndex = (pageNum - 1) * limitNum;
+      const endIndex = startIndex + limitNum;
+      const paginatedAssets = assets.slice(startIndex, endIndex);
+      
+      res.json({
+        assets: paginatedAssets,
+        pagination: {
+          page: pageNum,
+          limit: limitNum,
+          total: assets.length,
+          totalPages: Math.ceil(assets.length / limitNum),
+          hasNext: endIndex < assets.length,
+          hasPrev: pageNum > 1
+        }
+      });
     } catch (error) {
-      res.status(500).json({ error: 'Failed to retrieve assets' });
+      res.status(500).json({ 
+        error: 'Failed to retrieve assets',
+        code: 'ASSETS_FETCH_ERROR',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
     }
   });
 
@@ -200,15 +330,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get recent activities
+  // Get recent activities with pagination
   app.get('/api/recent-activities', async (req, res) => {
     try {
-      const events = await storage.getAllEvents();
+      const { limit = '10', participantId, assetId, action } = req.query;
+      const limitNum = Math.max(1, Math.min(100, parseInt(limit as string)));
+      
+      let events = await storage.getAllEvents();
       const participants = await storage.getAllParticipants();
       const assets = await storage.getAllAssets();
       
-      // Get last 10 events with participant and asset details
-      const recentEvents = events.slice(0, 10).map(event => {
+      // Apply filters
+      if (participantId) {
+        events = events.filter(event => event.participantId === participantId);
+      }
+      if (assetId) {
+        events = events.filter(event => event.assetId === assetId);
+      }
+      if (action) {
+        events = events.filter(event => event.action === action);
+      }
+      
+      // Get recent events with participant and asset details
+      const recentEvents = events.slice(0, limitNum).map(event => {
         const participant = participants.find(p => p.id === event.participantId);
         const asset = assets.find(a => a.id === event.assetId);
         
@@ -223,9 +367,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         };
       });
       
-      res.json(recentEvents);
+      res.json({
+        activities: recentEvents,
+        total: events.length,
+        limit: limitNum
+      });
     } catch (error) {
-      res.status(500).json({ error: 'Failed to retrieve recent activities' });
+      res.status(500).json({ 
+        error: 'Failed to retrieve recent activities',
+        code: 'ACTIVITIES_FETCH_ERROR',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
     }
   });
 
@@ -337,7 +489,137 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
     } catch (error) {
-      res.status(500).json({ error: 'Chatbot error occurred' });
+      res.status(500).json({ 
+        error: 'Chatbot error occurred',
+        code: 'CHATBOT_ERROR',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  // Audit log endpoint
+  app.get('/api/audit-log', async (req, res) => {
+    try {
+      const { startDate, endDate, participantId, assetId, format = 'json' } = req.query;
+      
+      let events = await storage.getAllEvents();
+      const participants = await storage.getAllParticipants();
+      const assets = await storage.getAllAssets();
+      const blockchain = await storage.getBlockchain();
+      
+      // Apply date filters
+      if (startDate) {
+        const start = new Date(startDate as string);
+        events = events.filter(event => event.timestamp >= start);
+      }
+      if (endDate) {
+        const end = new Date(endDate as string);
+        events = events.filter(event => event.timestamp <= end);
+      }
+      if (participantId) {
+        events = events.filter(event => event.participantId === participantId);
+      }
+      if (assetId) {
+        events = events.filter(event => event.assetId === assetId);
+      }
+      
+      // Create audit entries
+      const auditEntries = events.map(event => {
+        const participant = participants.find(p => p.id === event.participantId);
+        const asset = assets.find(a => a.id === event.assetId);
+        const block = blockchain.find(b => b.id === event.blockId);
+        
+        return {
+          eventId: event.id,
+          blockIndex: block?.index || 'N/A',
+          blockHash: block?.hash || 'N/A',
+          timestamp: event.timestamp,
+          participant: participant?.username || 'Unknown',
+          participantRole: participant?.role || 'Unknown',
+          action: event.action,
+          assetId: asset?.assetId || 'Unknown',
+          assetName: asset?.name || 'Unknown',
+          location: event.location || 'N/A',
+          metadata: event.metadata
+        };
+      });
+      
+      // Return CSV format if requested
+      if (format === 'csv') {
+        const csvHeaders = 'Event ID,Block Index,Block Hash,Timestamp,Participant,Role,Action,Asset ID,Asset Name,Location\n';
+        const csvRows = auditEntries.map(entry => 
+          `${entry.eventId},${entry.blockIndex},${entry.blockHash},${entry.timestamp.toISOString()},${entry.participant},${entry.participantRole},${entry.action},${entry.assetId},${entry.assetName},${entry.location || ''}`
+        ).join('\n');
+        
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', `attachment; filename=originledger-audit-${new Date().toISOString().split('T')[0]}.csv`);
+        return res.send(csvHeaders + csvRows);
+      }
+      
+      res.json({
+        auditEntries,
+        summary: {
+          totalEvents: auditEntries.length,
+          dateRange: {
+            start: startDate || 'N/A',
+            end: endDate || 'N/A'
+          },
+          generatedAt: new Date().toISOString(),
+          chainValidation: {
+            totalBlocks: blockchain.length,
+            lastBlockHash: blockchain[blockchain.length - 1]?.hash || 'N/A'
+          }
+        }
+      });
+      
+    } catch (error) {
+      res.status(500).json({ 
+        error: 'Failed to generate audit log',
+        code: 'AUDIT_LOG_ERROR',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  // Health check with comprehensive system status
+  app.get('/api/health', async (req, res) => {
+    try {
+      const stats = await storage.getDashboardStats();
+      const blockchain = await storage.getBlockchain();
+      const participants = await storage.getAllParticipants();
+      
+      // Simple chain validation
+      let chainValid = true;
+      if (blockchain.length > 1) {
+        for (let i = 1; i < blockchain.length; i++) {
+          if (blockchain[i].prevHash !== blockchain[i - 1].hash) {
+            chainValid = false;
+            break;
+          }
+        }
+      }
+      
+      res.json({
+        status: 'healthy',
+        timestamp: new Date().toISOString(),
+        version: '1.0.0',
+        environment: process.env.NODE_ENV || 'development',
+        database: 'in-memory',
+        blockchain: {
+          totalBlocks: blockchain.length,
+          valid: chainValid,
+          lastBlockHash: blockchain[blockchain.length - 1]?.hash || 'none'
+        },
+        statistics: stats,
+        participants: participants.length,
+        uptime: process.uptime()
+      });
+    } catch (error) {
+      res.status(500).json({
+        status: 'unhealthy',
+        error: 'Health check failed',
+        timestamp: new Date().toISOString()
+      });
     }
   });
 

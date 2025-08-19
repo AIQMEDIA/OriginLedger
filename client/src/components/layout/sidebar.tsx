@@ -8,7 +8,8 @@ import {
   Code,
   Link as LinkIcon,
   User,
-  MessageCircle
+  MessageCircle,
+  Shield
 } from "lucide-react";
 
 const navigationItems = [
@@ -18,6 +19,7 @@ const navigationItems = [
   { path: "/participants", label: "Participants", icon: Users },
   { path: "/events", label: "Add Event", icon: Plus },
   { path: "/chat", label: "AI Assistant", icon: MessageCircle },
+  { path: "/audit", label: "Audit & Compliance", icon: Shield },
   { path: "/api-docs", label: "API Docs", icon: Code },
 ];
 

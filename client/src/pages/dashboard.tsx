@@ -10,10 +10,12 @@ export default function Dashboard() {
     queryFn: api.getDashboardStats,
   });
 
-  const { data: activities, isLoading: activitiesLoading } = useQuery({
+  const { data: recentActivitiesData, isLoading: activitiesLoading } = useQuery({
     queryKey: ['/api/recent-activities'],
-    queryFn: () => api.getRecentActivities(10),
+    queryFn: () => api.getRecentActivities({ limit: 10 }),
   });
+
+  const activities = recentActivitiesData?.activities || [];
 
   const { data: health } = useQuery({
     queryKey: ['/api/health'],

@@ -51,6 +51,7 @@ export class MemStorage implements IStorage {
     this.events = new Map();
     this.blockIndex = 0;
     this.initializeGenesis();
+    this.initializeTestData();
   }
 
   private initializeGenesis() {
@@ -68,6 +69,86 @@ export class MemStorage implements IStorage {
   private calculateHash(index: number, timestamp: Date, data: any, prevHash: string): string {
     const dataString = `${index}${timestamp.toISOString()}${JSON.stringify(data)}${prevHash}`;
     return crypto.createHash('sha256').update(dataString).digest('hex');
+  }
+
+  private async initializeTestData() {
+    // Add sample participants
+    const manufacturer = await this.createParticipant({
+      username: 'AcmeCorp',
+      role: 'manufacturer',
+      email: 'contact@acmecorp.com'
+    });
+
+    const shipper = await this.createParticipant({
+      username: 'GlobalLogistics',
+      role: 'shipper',
+      email: 'ops@globallogistics.com'
+    });
+
+    const retailer = await this.createParticipant({
+      username: 'TechMart',
+      role: 'retailer',
+      email: 'procurement@techmart.com'
+    });
+
+    // Add sample assets with events
+    const asset1 = await this.createAsset({
+      assetId: 'PRD-2024-001',
+      name: 'Industrial Sensor Module',
+      category: 'Electronics',
+      currentStatus: 'manufactured',
+      currentLocation: 'Factory Floor A',
+      batch: 'BATCH-001'
+    });
+
+    const asset2 = await this.createAsset({
+      assetId: 'PRD-2024-002',
+      name: 'Smart Gateway Device',
+      category: 'IoT',
+      currentStatus: 'shipped',
+      currentLocation: 'Distribution Center',
+      batch: 'BATCH-002'
+    });
+
+    // Create blockchain events for the assets
+    const manufacturingData: BlockchainData = {
+      user: 'AcmeCorp',
+      role: 'manufacturer',
+      action: 'manufactured',
+      asset_id: 'PRD-2024-001',
+      meta: { location: 'Factory Floor A', batch: 'BATCH-001', quality_check: 'passed' }
+    };
+
+    const block1 = await this.addBlock(manufacturingData);
+    await this.createEvent({
+      blockId: block1.id,
+      participantId: manufacturer.id,
+      assetId: asset1.id,
+      action: 'manufactured',
+      location: 'Factory Floor A',
+      metadata: { batch: 'BATCH-001', quality_check: 'passed' }
+    });
+
+    const shippingData: BlockchainData = {
+      user: 'GlobalLogistics',
+      role: 'shipper',
+      action: 'shipped',
+      asset_id: 'PRD-2024-002',
+      meta: { location: 'Distribution Center', tracking_number: 'TRK-789456', carrier: 'Express Freight' }
+    };
+
+    const block2 = await this.addBlock(shippingData);
+    await this.createEvent({
+      blockId: block2.id,
+      participantId: shipper.id,
+      assetId: asset2.id,
+      action: 'shipped',
+      location: 'Distribution Center',
+      metadata: { tracking_number: 'TRK-789456', carrier: 'Express Freight' }
+    });
+
+    // Update asset statuses
+    await this.updateAssetStatus('PRD-2024-002', 'shipped', 'Distribution Center');
   }
 
   // Participant operations
