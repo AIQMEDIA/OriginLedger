@@ -1,10 +1,20 @@
+import React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
+import { HeroSection } from "@/components/landing/hero-section";
+import { useAuth } from "@/contexts/auth-context";
 import StatsCards from "@/components/dashboard/stats-cards";
 import RecentActivity from "@/components/dashboard/recent-activity";
 import ChainHealth from "@/components/dashboard/chain-health";
 
 export default function Dashboard() {
+  const { isAuthenticated } = useAuth();
+
+  // Show landing page for non-authenticated users
+  if (!isAuthenticated) {
+    return <HeroSection />;
+  }
+
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ['/api/dashboard-stats'],
     queryFn: api.getDashboardStats,

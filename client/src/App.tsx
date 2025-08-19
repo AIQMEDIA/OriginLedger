@@ -9,6 +9,7 @@ import { queryClient } from "./lib/queryClient";
 
 // Import pages
 import Dashboard from "@/pages/dashboard";
+import Landing from "@/pages/landing";
 import Blockchain from "@/pages/blockchain";
 import Assets from "@/pages/assets";
 import Participants from "@/pages/participants";
@@ -29,6 +30,7 @@ function Router() {
       <main className="container mx-auto px-4 py-8">
         <Switch>
           <Route path="/" component={Dashboard} />
+          <Route path="/landing" component={Landing} />
           <Route path="/dashboard" component={Dashboard} />
           <Route path="/blockchain" component={Blockchain} />
           <Route path="/assets" component={Assets} />

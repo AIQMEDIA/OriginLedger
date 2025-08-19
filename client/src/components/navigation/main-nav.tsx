@@ -12,6 +12,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/auth-context";
 import { AuthModal } from "@/components/auth/auth-modal";
+import originLedgerIcon from "@assets/OriginLedgerIcon_1755629837786.png";
 import { 
   Home, 
   Package, 
@@ -217,11 +218,15 @@ export function MainNavigation() {
         <div className="container flex h-16 items-center justify-between px-4">
           {/* Logo and Brand */}
           <div className="flex items-center space-x-2">
-            <Link href="/" className="flex items-center space-x-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                <Package className="h-4 w-4" />
-              </div>
-              <span className="font-bold text-xl">OriginLedger</span>
+            <Link href="/" className="flex items-center space-x-3">
+              <img 
+                src={originLedgerIcon} 
+                alt="OriginLedger"
+                className="w-8 h-8 object-contain"
+              />
+              <span className="font-bold text-xl bg-gradient-to-r from-blue-600 to-cyan-500 bg-clip-text text-transparent">
+                OriginLedger
+              </span>
             </Link>
           </div>
 
