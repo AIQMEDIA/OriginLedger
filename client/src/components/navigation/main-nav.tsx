@@ -93,7 +93,7 @@ const navigationItems: NavigationItem[] = [
   },
   {
     path: "/chat",
-    label: "Support Chat",
+    label: "AI Assistant",
     icon: MessageCircle,
     requireAuth: false
   },
@@ -307,15 +307,19 @@ export function MainNavigation() {
               )}
             </Button>
 
-            {/* Help Button */}
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-9 w-9 p-0"
-              data-testid="help-button"
-            >
-              <HelpCircle className="h-4 w-4" />
-            </Button>
+            {/* AI Assistant Quick Access */}
+            <Link href="/chat">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="flex items-center gap-2 relative"
+                data-testid="nav-chat-button"
+              >
+                <MessageCircle className="h-4 w-4" />
+                <span className="hidden sm:inline">AI Assistant</span>
+                <div className="h-2 w-2 bg-green-500 rounded-full animate-pulse absolute -top-1 -right-1"></div>
+              </Button>
+            </Link>
 
             {/* Authentication Section */}
             {isAuthenticated && user ? (

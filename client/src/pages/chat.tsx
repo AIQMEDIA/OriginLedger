@@ -87,13 +87,32 @@ export default function Chat() {
     setInputMessage(question);
   };
 
+  const handleQuickMessage = (message: string) => {
+    setInputMessage(message);
+    // Automatically send the message
+    const userMessage: ChatMessage = {
+      id: Date.now().toString() + '_user',
+      content: message,
+      sender: 'user',
+      timestamp: new Date()
+    };
+    setMessages(prev => [...prev, userMessage]);
+    sendMessageMutation.mutate(message);
+  };
+
   return (
     <div className="h-[calc(100vh-12rem)] flex flex-col">
       <Card className="flex-1 flex flex-col">
-        <CardHeader className="border-b border-border/40">
-          <CardTitle className="flex items-center gap-2">
-            <Bot className="w-5 h-5 text-primary" />
-            OriginLedger AI Assistant
+        <CardHeader className="border-b border-border/40 bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-950/20 dark:to-cyan-950/20">
+          <CardTitle className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Bot className="w-5 h-5 text-primary" />
+              OriginLedger AI Assistant
+            </div>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <div className="h-2 w-2 bg-green-500 rounded-full animate-pulse"></div>
+              <span>Online 24/7</span>
+            </div>
           </CardTitle>
         </CardHeader>
         

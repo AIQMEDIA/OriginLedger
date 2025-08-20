@@ -4,7 +4,9 @@ import { api } from "@/lib/api";
 import { HeroSection } from "@/components/landing/hero-section";
 import { useAuth } from "@/contexts/auth-context";
 import { Badge } from "@/components/ui/badge";
-import { BarChart3 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { BarChart3, MessageCircle } from "lucide-react";
+import { Link } from "wouter";
 import StatsCards from "@/components/dashboard/stats-cards";
 import RecentActivity from "@/components/dashboard/recent-activity";
 import ChainHealth from "@/components/dashboard/chain-health";
@@ -68,12 +70,34 @@ export default function Dashboard() {
       
       <StatsCards stats={stats} />
       
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <RecentActivity 
           activities={activities} 
           isLoading={activitiesLoading} 
         />
         <ChainHealth health={health} />
+        
+        {/* AI Assistant Quick Access Card */}
+        <div className="bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950/20 dark:to-cyan-950/20 rounded-xl p-6 border border-blue-200 dark:border-blue-800">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="h-10 w-10 bg-blue-600 rounded-full flex items-center justify-center">
+              <MessageCircle className="h-5 w-5 text-white" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-gray-900 dark:text-gray-100">AI Assistant</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-300">Get instant help</p>
+            </div>
+          </div>
+          <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
+            Need help with blockchain operations, asset tracking, or supply chain questions? Our AI assistant is here 24/7.
+          </p>
+          <Link href="/chat">
+            <Button className="w-full bg-blue-600 hover:bg-blue-700" data-testid="dashboard-chat-cta">
+              <MessageCircle className="h-4 w-4 mr-2" />
+              Chat Now
+            </Button>
+          </Link>
+        </div>
       </div>
     </div>
   );

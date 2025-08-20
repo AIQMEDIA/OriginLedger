@@ -5,6 +5,7 @@ import { MainNavigation } from "@/components/navigation/main-nav";
 import { RoleGuard } from "@/components/auth/role-guard";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { FloatingChatButton } from "@/components/chat/floating-chat-button";
 import { queryClient } from "./lib/queryClient";
 
 // Import pages
@@ -96,6 +97,9 @@ function Router() {
           </div>
         </div>
       </footer>
+      
+      {/* Floating Chat Assistant */}
+      <FloatingChatButton />
     </div>
   );
 }
