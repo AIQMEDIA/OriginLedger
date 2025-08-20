@@ -547,6 +547,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json({
         assets: paginatedAssets,
+        total,
         pagination: {
           page: pageNum,
           limit: limitNum,
@@ -603,6 +604,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // General stats endpoint (alias for dashboard stats)
+  app.get('/api/stats', async (req, res) => {
+    try {
+      const participants = await storage.getAllParticipants();
+      const assets = await storage.getAllAssets();
+      const events = await storage.getAllEvents();
+      const blockchain = await storage.getBlockchain();
+      
+      const stats = {
+        totalParticipants: participants.length,
+        totalAssets: assets.length,
+        totalEvents: events.length,
+        totalBlocks: blockchain.length,
+        lastActivity: events.length > 0 ? events[events.length - 1].timestamp : null
+      };
+      
+      res.json(stats);
+    } catch (error) {
+      res.status(500).json({ 
+        error: 'Failed to retrieve stats',
+        code: 'STATS_ERROR',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
   // Get recent activities with pagination
   app.get('/api/recent-activities', async (req, res) => {
     try {
@@ -654,7 +681,134 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Chatbot endpoint
+  // Chat endpoint (primary)
+  app.post('/api/chat', async (req, res) => {
+    try {
+      const { message } = req.body;
+      
+      if (!message || typeof message !== 'string') {
+        return res.status(400).json({ 
+          error: 'Message is required',
+          code: 'VALIDATION_ERROR'
+        });
+      }
+      
+      const userInput = message.trim().toLowerCase();
+      
+      // Check for asset tracking queries
+      if (userInput.includes('where') && userInput.includes('asset')) {
+        const assetIdMatch = message.match(/[a-zA-Z]+-\d+-\d+|\d+/);
+        const assetId = assetIdMatch ? assetIdMatch[0] : null;
+        
+        if (assetId) {
+          const asset = await storage.getAsset(assetId);
+          if (asset) {
+            const events = await storage.getEventsByAsset(asset.id);
+            const recentEvent = events[events.length - 1];
+            
+            let reply = `Asset ${assetId} is currently '${asset.currentStatus}'`;
+            if (asset.currentLocation) {
+              reply += ` at ${asset.currentLocation}`;
+            }
+            
+            if (recentEvent) {
+              const participant = await storage.getParticipant(recentEvent.participantId || '');
+              reply += `. Latest event: ${recentEvent.action} by ${participant?.username || 'Unknown'} on ${recentEvent.timestamp.toLocaleDateString()}.`;
+            }
+            
+            return res.json({ reply });
+          } else {
+            return res.json({ 
+              reply: `Asset ${assetId} not found in the system. Please check the asset ID or register it first.` 
+            });
+          }
+        } else {
+          return res.json({ 
+            reply: "I couldn't find an asset ID in your message. Please specify an asset ID like 'PRD-2024-001'." 
+          });
+        }
+      }
+      
+      // OriginLedger info
+      if (userInput.includes('originledger') || userInput.includes('what is') || userInput.includes('about')) {
+        return res.json({
+          reply: "OriginLedger is an enterprise supply chain blockchain platform that tracks assets from manufacturing to delivery. It provides secure, transparent tracking with AI-powered observability by Arize Phoenix. Key features include asset tracking, participant management, blockchain validation, and comprehensive audit trails."
+        });
+      }
+      
+      // Help queries
+      if (userInput.includes('help') || userInput.includes('how')) {
+        return res.json({
+          reply: `I can help you with OriginLedger! Try asking:
+• 'Where is asset PRD-2024-001?' - Track asset location and status
+• 'What is OriginLedger?' - Learn about the platform
+• 'How do I register?' - Learn about participant registration
+• 'How do I add an event?' - Learn about recording supply chain events
+• 'What participants are registered?' - See current participants`
+        });
+      }
+      
+      // Registration instructions
+      if (userInput.includes('register') || userInput.includes('participant')) {
+        const participants = await storage.getAllParticipants();
+        return res.json({
+          reply: `To register as a participant, use the 'Add Participant' button in the Participants section. You can register as: manufacturer, shipper, retailer, or other. Currently ${participants.length} participants are registered.`
+        });
+      }
+      
+      // Event adding instructions
+      if (userInput.includes('add') && (userInput.includes('event') || userInput.includes('shipment'))) {
+        return res.json({
+          reply: "To add a supply chain event, go to the 'Add Event' section. You'll need: participant name, action type (manufactured, shipped, received, etc.), asset ID, and optional location/metadata. Events are automatically added to the blockchain."
+        });
+      }
+      
+      // Participants query
+      if (userInput.includes('participants') && userInput.includes('who')) {
+        const participants = await storage.getAllParticipants();
+        if (participants.length > 0) {
+          const participantList = participants.slice(0, 5).map(p => `${p.username} (${p.role})`);
+          return res.json({
+            reply: `Registered participants: ${participantList.join(', ')}${participants.length > 5 ? '...' : ''}. Total: ${participants.length} participants.`
+          });
+        } else {
+          return res.json({
+            reply: "No participants are currently registered. Use the 'Add Participant' button to register the first participant."
+          });
+        }
+      }
+      
+      // Blockchain info
+      if (userInput.includes('blockchain') || userInput.includes('blocks')) {
+        const blockchain = await storage.getBlockchain();
+        const events = await storage.getAllEvents();
+        return res.json({
+          reply: `OriginLedger blockchain has ${blockchain.length} blocks. Total events recorded: ${events.length}.`
+        });
+      }
+      
+      // Greeting
+      if (['hello', 'hi', 'hey'].some(greeting => userInput.includes(greeting))) {
+        return res.json({
+          reply: "Hello! I'm the OriginLedger assistant. I can help you track assets, understand how to use the platform, and answer questions about your supply chain. What would you like to know?"
+        });
+      }
+      
+      // Default fallback
+      return res.json({
+        reply: "I didn't understand that question. Try asking about asset tracking ('Where is asset 12345?'), platform help ('How do I register?'), or say 'help' for more options."
+      });
+      
+    } catch (error) {
+      res.status(500).json({ 
+        error: 'Chatbot error occurred',
+        code: 'CHATBOT_ERROR',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  // Chatbot endpoint (legacy alias)
   app.post('/api/chatbot', async (req, res) => {
     try {
       const { message } = req.body;
