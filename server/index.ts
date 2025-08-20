@@ -8,21 +8,13 @@ const app = express();
 
 // 1. Safe HTTPS redirect middleware for Replit (prevents loops)
 const forceHttps = (req: any, res: any, next: any) => {
-  // Determine if request is already secure (standard or via proxy)
-  const isSecure = req.secure ||
-    (req.headers["x-forwarded-proto"] === "https");
-
-  // Allow HTTP for localhost and *.repl.co unless using custom domain
-  const isLocal = req.hostname === "localhost" ||
-    req.hostname.endsWith(".repl.co") ||
-    req.hostname.endsWith(".replit.dev") ||
-    req.hostname.endsWith(".replit.app");
-
-  if (!isSecure && !isLocal && process.env.NODE_ENV === "production") {
-    // Only redirect to HTTPS if not secure, not local/Replit, and in production
+  // Only redirect if not secure and not localhost/.repl.co
+  const isSecure = req.secure || req.headers["x-forwarded-proto"] === "https";
+  const isLocal = req.hostname === "localhost" || req.hostname.endsWith(".repl.co");
+  if (!isSecure && !isLocal) {
     return res.redirect("https://" + req.headers.host + req.url);
   }
-  return next();
+  next();
 };
 
 app.use(forceHttps);
