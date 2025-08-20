@@ -32,7 +32,8 @@ import {
   Moon,
   Sun,
   HelpCircle,
-  CreditCard
+  CreditCard,
+  Zap
 } from "lucide-react";
 
 interface NavigationItem {
@@ -224,7 +225,7 @@ export function MainNavigation() {
       <nav className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-16 items-center justify-between px-4">
           {/* Logo and Brand */}
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-4">
             <Link href="/" className="flex items-center space-x-3">
               <img 
                 src={originLedgerIcon} 
@@ -235,6 +236,14 @@ export function MainNavigation() {
                 OriginLedger
               </span>
             </Link>
+            
+            {/* Arize AI Partnership Badge */}
+            <div className="hidden sm:flex items-center gap-2 px-3 py-1 bg-purple-50 dark:bg-purple-950/30 rounded-full border border-purple-200 dark:border-purple-800">
+              <Zap className="h-3 w-3 text-purple-600 dark:text-purple-400" />
+              <span className="text-xs font-medium text-purple-700 dark:text-purple-300">
+                Powered by Arize AI
+              </span>
+            </div>
           </div>
 
           {/* Main Navigation Links */}

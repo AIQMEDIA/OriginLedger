@@ -77,9 +77,34 @@ export default function Observability() {
 
   return (
     <div className="container mx-auto p-6 space-y-6">
-      <div className="flex items-center gap-2 mb-6">
-        <Activity className="h-6 w-6" />
-        <h1 className="text-2xl font-bold">Phoenix OpenTelemetry Integration</h1>
+      {/* Arize Phoenix Partnership Header */}
+      <div className="bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-xl p-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold mb-2">Enterprise Observability</h1>
+            <p className="text-purple-100 mb-3">
+              Advanced AI-powered monitoring and analytics for supply chain blockchain operations
+            </p>
+            <div className="flex items-center gap-2 flex-wrap">
+              <Badge variant="secondary" className="bg-white/20 text-white border-white/30">
+                <Zap className="h-3 w-3 mr-1" />
+                Powered by Arize Phoenix
+              </Badge>
+              <Badge variant="secondary" className="bg-white/20 text-white border-white/30">
+                $45M AI Platform
+              </Badge>
+              <Badge variant="secondary" className="bg-white/20 text-white border-white/30">
+                Enterprise Grade
+              </Badge>
+              <Badge variant="secondary" className="bg-white/20 text-white border-white/30">
+                6,000+ Open Source Users
+              </Badge>
+            </div>
+          </div>
+          <div className="hidden lg:block">
+            <Activity className="h-16 w-16 text-purple-200" />
+          </div>
+        </div>
       </div>
 
       {/* Integration Status */}

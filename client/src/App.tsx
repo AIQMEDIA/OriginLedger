@@ -28,7 +28,7 @@ function Router() {
   return (
     <div className="min-h-screen bg-background">
       <MainNavigation />
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-4 py-8 min-h-[calc(100vh-140px)]">
         <Switch>
           <Route path="/" component={Dashboard} />
           <Route path="/landing" component={Landing} />
@@ -78,6 +78,24 @@ function Router() {
           <Route component={NotFound} />
         </Switch>
       </main>
+      
+      {/* Enterprise Footer with Arize Phoenix Branding */}
+      <footer className="border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="container mx-auto px-4 py-6">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+            <div className="text-sm text-muted-foreground">
+              © 2025 OriginLedger. Enterprise Supply Chain Blockchain Platform.
+            </div>
+            <div className="flex items-center gap-3 text-sm text-muted-foreground">
+              <span>Enterprise Observability powered by</span>
+              <div className="flex items-center gap-1 px-2 py-1 bg-purple-50 dark:bg-purple-950/30 rounded border border-purple-200 dark:border-purple-800">
+                <div className="h-2 w-2 bg-purple-500 rounded-full animate-pulse"></div>
+                <span className="font-medium text-purple-700 dark:text-purple-300">Arize Phoenix AI</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

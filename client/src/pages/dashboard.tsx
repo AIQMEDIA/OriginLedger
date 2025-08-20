@@ -3,6 +3,8 @@ import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { HeroSection } from "@/components/landing/hero-section";
 import { useAuth } from "@/contexts/auth-context";
+import { Badge } from "@/components/ui/badge";
+import { BarChart3 } from "lucide-react";
 import StatsCards from "@/components/dashboard/stats-cards";
 import RecentActivity from "@/components/dashboard/recent-activity";
 import ChainHealth from "@/components/dashboard/chain-health";
@@ -50,6 +52,20 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-8">
+      {/* Enterprise Observability Badge */}
+      <div className="flex items-center justify-between bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-950/20 dark:to-blue-950/20 rounded-lg p-4 border border-purple-200 dark:border-purple-800">
+        <div className="flex items-center gap-3">
+          <BarChart3 className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+          <div>
+            <h3 className="font-semibold text-gray-900 dark:text-gray-100">Enterprise Observability</h3>
+            <p className="text-sm text-gray-600 dark:text-gray-300">Powered by Arize Phoenix AI Platform</p>
+          </div>
+        </div>
+        <Badge variant="outline" className="bg-purple-100 text-purple-700 border-purple-300 dark:bg-purple-900 dark:text-purple-300 dark:border-purple-700">
+          AI Monitoring Active
+        </Badge>
+      </div>
+      
       <StatsCards stats={stats} />
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
