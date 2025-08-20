@@ -141,7 +141,7 @@ router.patch('/subscription', requireAuth, async (req, res) => {
       newPlan,
       finalUserCount,
       finalAssetCount,
-      billingCycle || subscription.billingCycle
+      billingCycle || subscription.billingCycle || 'monthly'
     );
 
     // Update subscription

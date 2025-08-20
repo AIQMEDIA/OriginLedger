@@ -1,4 +1,4 @@
-import type { Express } from "express";
+import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertParticipantSchema, insertAssetSchema, type BlockchainData } from "@shared/schema";
@@ -18,7 +18,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/auth/login', [
     body('username').notEmpty().withMessage('Username is required'),
     body('password').isLength({ min: 1 }).withMessage('Password is required'),
-  ], async (req, res) => {
+  ], async (req: Request, res: Response) => {
     try {
       // Check validation errors
       const errors = validationResult(req);
@@ -123,7 +123,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
     body('role').isIn(['manufacturer', 'shipper', 'retailer', 'other']).withMessage('Invalid role'),
     body('email').isEmail().withMessage('Valid email is required'),
-  ], optionalAuth, async (req, res) => {
+  ], optionalAuth, async (req: Request, res: Response) => {
     try {
       // Check validation errors
       const errors = validationResult(req);
@@ -435,7 +435,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     query('limit').optional().isInt({ min: 1, max: 100 }).withMessage('Limit must be between 1 and 100'),
     query('sortBy').optional().isIn(['name', 'createdAt', 'updatedAt', 'currentStatus']).withMessage('Invalid sort field'),
     query('sortOrder').optional().isIn(['asc', 'desc']).withMessage('Sort order must be asc or desc'),
-  ], optionalAuth, async (req, res) => {
+  ], optionalAuth, async (req: Request, res: Response) => {
     try {
       // Check validation errors
       const errors = validationResult(req);
