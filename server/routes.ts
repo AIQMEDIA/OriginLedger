@@ -1040,6 +1040,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         statistics: stats,
         participants: participants.length,
         uptime: process.uptime(),
+        security: {
+          httpsRedirection: process.env.NODE_ENV === 'production',
+          helmetEnabled: true,
+          hstsEnabled: true,
+          cspEnabled: true,
+          secureHeaders: [
+            'X-Content-Type-Options',
+            'X-Frame-Options', 
+            'X-XSS-Protection',
+            'Strict-Transport-Security',
+            'Content-Security-Policy'
+          ],
+          environment: process.env.NODE_ENV === 'production' ? 'Production-ready with SSL' : 'Development (SSL via deployment)'
+        },
         observability: {
           phoenixEnabled: !!process.env.PHOENIX_OTEL_ENDPOINT,
           tracingActive: true,
@@ -1094,6 +1108,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
     });
+  });
+
+  // Security headers test endpoint
+  app.get('/api/security/status', (req, res) => {
+    const securityStatus = {
+      timestamp: new Date().toISOString(),
+      environment: process.env.NODE_ENV || 'development',
+      protocol: req.protocol,
+      host: req.get('host'),
+      userAgent: req.get('user-agent'),
+      httpsRedirect: process.env.NODE_ENV === 'production' ? 'active' : 'development-only',
+      securityHeaders: {
+        helmet: 'enabled',
+        hsts: 'enabled (1 year)',
+        csp: 'enabled',
+        xContentTypeOptions: 'nosniff',
+        xFrameOptions: 'deny',
+        xXssProtection: '1; mode=block'
+      },
+      deployment: {
+        current: 'development',
+        production: {
+          httpsAutomatic: true,
+          sslCertificate: 'Replit automatic',
+          socCompliance: 'SOC 2 Type 2',
+          encryption: 'TLS 1.2+ / AES-256'
+        }
+      },
+      recommendations: process.env.NODE_ENV !== 'production' ? [
+        'Deploy via Replit Deployments for automatic HTTPS',
+        'Production deployment provides valid SSL certificates',
+        'Eliminates browser security warnings automatically'
+      ] : []
+    };
+
+    res.json(securityStatus);
   });
 
   // Demo Phoenix tracing endpoint

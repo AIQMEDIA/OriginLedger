@@ -1,0 +1,66 @@
+Below is a Node.js/Express middleware code schema you can directly copy and paste into your Replit backend to:
+
+Redirect all HTTP to HTTPS
+
+Set secure headers
+
+Catch and block mixed content issues
+
+🚦 Express Middleware: Force HTTPS & Set Security Headers
+typescript
+import express from 'express';
+import helmet from 'helmet';
+
+const app = express();
+
+// 1. Enforce HTTPS (redirect HTTP to HTTPS)
+app.use((req, res, next) => {
+  // If on Heroku or behind a reverse proxy, check "x-forwarded-proto"
+  if (req.headers['x-forwarded-proto'] && req.headers['x-forwarded-proto'] !== 'https') {
+    return res.redirect(`https://${req.headers.host}${req.url}`);
+  }
+  // If running locally, ensure direct HTTPS
+  if (req.protocol !== 'https') {
+    return res.redirect(`https://${req.headers.host}${req.url}`);
+  }
+  next();
+});
+
+// 2. Set strong HTTP headers for security
+app.use(helmet());
+
+// 3. Block mixed content (optional; do in frontend as well)
+// You can set Content Security Policy with helmet
+app.use(
+  helmet.contentSecurityPolicy({
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'"],
+      objectSrc: ["'none'"],
+      upgradeInsecureRequests: [],
+      imgSrc: ["'self'", "data:"],
+      connectSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+    },
+  })
+);
+
+// ... your routes below
+
+export default app;
+Additional Steps:
+Verify SSL Certificate on Your Hosting Provider:
+
+Make sure your hosting has a valid SSL/TLS certificate and is configured to serve over HTTPS only.
+
+Double-check DNS and certificate chain if there are persistent warnings.
+
+Update Frontend URLs:
+
+All asset and API calls in your React app should use HTTPS.
+
+Test in Production:
+
+Once deployed, visit https://originledger.net and confirm that the browser shows ‘Secure’ (not just a valid cert).
+
+With this middleware and best practices, your platform will automatically redirect traffic to HTTPS and enforce security headers—ensuring enterprise-grade trust and removing browser deal-breaker warnings.

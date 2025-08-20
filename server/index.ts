@@ -1,9 +1,56 @@
 import express, { type Request, Response, NextFunction } from "express";
+import helmet from "helmet";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { initializePhoenixTelemetry } from './phoenix-otel';
 
 const app = express();
+
+// 1. Enforce HTTPS (redirect HTTP to HTTPS) - only in production
+if (process.env.NODE_ENV === "production") {
+  app.use((req, res, next) => {
+    // Check for forwarded protocol header (for reverse proxies like Replit)
+    if (req.headers['x-forwarded-proto'] && req.headers['x-forwarded-proto'] !== 'https') {
+      return res.redirect(`https://${req.headers.host}${req.url}`);
+    }
+    // Direct protocol check
+    if (req.protocol !== 'https') {
+      return res.redirect(`https://${req.headers.host}${req.url}`);
+    }
+    next();
+  });
+}
+
+// 2. Set strong HTTP headers for security
+const cspDirectives: any = {
+  defaultSrc: ["'self'"],
+  scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"], // Allow inline for Vite dev
+  objectSrc: ["'none'"],
+  imgSrc: ["'self'", "data:", "blob:", "https:"],
+  connectSrc: ["'self'", "ws:", "wss:", "https:"], // Allow websockets for Vite
+  styleSrc: ["'self'", "'unsafe-inline'"],
+  fontSrc: ["'self'", "https:", "data:"],
+  frameSrc: ["'none'"],
+  baseUri: ["'self'"],
+  formAction: ["'self'"]
+};
+
+// Only add upgradeInsecureRequests in production
+if (process.env.NODE_ENV === "production") {
+  cspDirectives.upgradeInsecureRequests = [];
+}
+
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: cspDirectives,
+  },
+  hsts: {
+    maxAge: 31536000, // 1 year
+    includeSubDomains: true,
+    preload: true
+  }
+}));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
