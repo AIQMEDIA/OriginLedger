@@ -1118,7 +1118,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       protocol: req.protocol,
       host: req.get('host'),
       userAgent: req.get('user-agent'),
-      httpsRedirect: process.env.NODE_ENV === 'production' ? 'active' : 'development-only',
+      httpsRedirect: 'smart-redirect (safe for Replit)',
       securityHeaders: {
         helmet: 'enabled',
         hsts: 'enabled (1 year)',
@@ -1136,10 +1136,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           encryption: 'TLS 1.2+ / AES-256'
         }
       },
+      redirectBehavior: {
+        localhost: 'allowed (no redirect)',
+        replitDomains: 'allowed (.repl.co, .replit.dev, .replit.app)',
+        customDomains: 'redirects to HTTPS in production',
+        loopPrevention: 'active'
+      },
       recommendations: process.env.NODE_ENV !== 'production' ? [
         'Deploy via Replit Deployments for automatic HTTPS',
         'Production deployment provides valid SSL certificates',
-        'Eliminates browser security warnings automatically'
+        'Safe redirect logic prevents infinite loops'
       ] : []
     };
 
