@@ -107,6 +107,13 @@ const navigationItems: NavigationItem[] = [
     label: "Subscription",
     icon: CreditCard,
     requireAuth: true
+  },
+  {
+    path: "/observability",
+    label: "Observability",
+    icon: BarChart3,
+    roles: ["manufacturer", "other"],
+    requireAuth: true
   }
 ];
 

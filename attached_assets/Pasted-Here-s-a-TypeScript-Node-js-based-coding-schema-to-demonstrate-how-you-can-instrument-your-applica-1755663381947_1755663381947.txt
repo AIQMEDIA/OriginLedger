@@ -1,0 +1,78 @@
+Here’s a TypeScript (Node.js)–based coding schema to demonstrate how you can instrument your application and send traces/events to a self-hosted or cloud Arize Phoenix instance. This template is Replit-ready and easy to extend for any backend (Express, etc.) integration.
+
+📎 Arize Phoenix (Open Source) Integration Coding Schema (TypeScript/Node.js)
+1. Install dependencies (on Replit’s Shell):
+
+text
+npm install @opentelemetry/api @opentelemetry/sdk-node @opentelemetry/exporter-otlp-http
+2. phoenix-otel.ts — Minimal OpenTelemetry Exporter Config
+
+typescript
+import { NodeSDK } from '@opentelemetry/sdk-node';
+import { OTLPTraceExporter } from '@opentelemetry/exporter-otlp-http';
+import { trace, SpanStatusCode } from '@opentelemetry/api';
+
+// 1. Configure your Phoenix endpoint (change host/port/path as needed)
+const PHOENIX_OTEL_ENDPOINT = 'http://localhost:6006/v1/traces'; // local example
+// For Phoenix Cloud: use their documented endpoint
+
+const otlpExporter = new OTLPTraceExporter({
+  url: PHOENIX_OTEL_ENDPOINT,
+});
+
+const otelSDK = new NodeSDK({
+  traceExporter: otlpExporter,
+  serviceName: 'MyReplitApp',
+});
+
+otelSDK.start();
+
+// 2. Helper to trace events (wrap any action you want to observe)
+export async function tracePhoenixSpan(
+  name: string,
+  attributes: Record<string, unknown>,
+  action: () => Promise<void>
+) {
+  const tracer = trace.getTracer('replit-app-tracer');
+  return tracer.startActiveSpan(name, { attributes }, async (span) => {
+    try {
+      await action();
+      span.setStatus({ code: SpanStatusCode.OK });
+    } catch (err) {
+      span.setStatus({ code: SpanStatusCode.ERROR, message: (err as Error)?.message });
+      throw err;
+    } finally {
+      span.end();
+    }
+  });
+}
+
+// 3. Example usage (wrap your business logic)
+export async function demoObservedEvent() {
+  await tracePhoenixSpan(
+    'TestEvent',
+    { userId: 'user1', action: 'demoAction', timestamp: Date.now() },
+    async () => {
+      // Place any business logic you want to monitor here
+      await new Promise((res) => setTimeout(res, 250)); // Simulate work
+    }
+  );
+}
+
+// 4. Graceful shutdown (optional)
+process.on('SIGTERM', () => {
+  otelSDK.shutdown()
+    .then(() => console.log('Phoenix telemetry shut down.'))
+    .catch(console.error)
+    .finally(() => process.exit(0));
+});
+3. How to Run and Extend:
+
+Import and call demoObservedEvent() or wrap any key logic you want observed.
+
+Change PHOENIX_OTEL_ENDPOINT to your actual Phoenix server endpoint (local or cloud).
+
+Add more event attributes as needed; these appear in your Phoenix dashboard.
+
+You can wrap any function—webhooks, API endpoints, model runs, etc.—with tracePhoenixSpan for deep observability.
+

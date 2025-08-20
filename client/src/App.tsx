@@ -21,6 +21,7 @@ import Testing from "@/pages/testing";
 import Profile from "@/pages/profile";
 import RoleDemo from "@/pages/role-demo";
 import Subscription from "@/pages/subscription";
+import Observability from "@/pages/observability";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -66,6 +67,11 @@ function Router() {
           <Route path="/subscription">
             <RoleGuard requireAuth={true}>
               <Subscription />
+            </RoleGuard>
+          </Route>
+          <Route path="/observability">
+            <RoleGuard allowedRoles={["manufacturer", "other"]} requireAuth={true}>
+              <Observability />
             </RoleGuard>
           </Route>
           <Route path="/api-docs" component={ApiDocs} />

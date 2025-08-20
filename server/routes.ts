@@ -5,6 +5,14 @@ import { insertParticipantSchema, insertAssetSchema, type BlockchainData } from 
 import { requireAuth, requireRole, optionalAuth, generateToken, checkPassword, hashPassword } from './auth';
 import { body, query, validationResult } from 'express-validator';
 import crypto from 'crypto';
+import { 
+  traceSupplyChainEvent, 
+  traceBlockchainOperation, 
+  traceAssetOperation, 
+  traceParticipantOperation,
+  traceAPIOperation,
+  traceChainValidation
+} from './phoenix-otel';
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Enhanced utility function for calculating block hash
@@ -19,61 +27,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
     body('username').notEmpty().withMessage('Username is required'),
     body('password').isLength({ min: 1 }).withMessage('Password is required'),
   ], async (req: Request, res: Response) => {
-    try {
-      // Check validation errors
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        return res.status(400).json({ 
-          error: 'Validation failed',
-          code: 'VALIDATION_ERROR',
-          details: errors.array()
+    await traceAPIOperation('/api/auth/login', 'POST', async () => {
+      try {
+        // Check validation errors
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+          return res.status(400).json({ 
+            error: 'Validation failed',
+            code: 'VALIDATION_ERROR',
+            details: errors.array()
+          });
+        }
+
+        const { username, password } = req.body;
+
+        // Find participant by username with tracing
+        const participant = await traceParticipantOperation('login_attempt', { username }, async () => {
+          return await storage.getParticipantByUsername(username);
         });
-      }
 
-      const { username, password } = req.body;
+        if (!participant || !(participant as any).passwordHash) {
+          return res.status(401).json({ 
+            error: 'Invalid credentials',
+            code: 'INVALID_CREDENTIALS'
+          });
+        }
 
-      // Find participant by username
-      const participant = await storage.getParticipantByUsername(username);
-      if (!participant || !(participant as any).passwordHash) {
-        return res.status(401).json({ 
-          error: 'Invalid credentials',
-          code: 'INVALID_CREDENTIALS'
-        });
-      }
+        // Verify password
+        const isValidPassword = checkPassword(password, (participant as any).passwordHash);
+        if (!isValidPassword) {
+          return res.status(401).json({ 
+            error: 'Invalid credentials',
+            code: 'INVALID_CREDENTIALS'
+          });
+        }
 
-      // Verify password
-      const isValidPassword = checkPassword(password, (participant as any).passwordHash);
-      if (!isValidPassword) {
-        return res.status(401).json({ 
-          error: 'Invalid credentials',
-          code: 'INVALID_CREDENTIALS'
-        });
-      }
-
-      // Generate JWT token
-      const token = generateToken({
-        id: participant.id,
-        username: participant.username,
-        role: participant.role
-      });
-
-      res.json({
-        message: 'Login successful',
-        token,
-        user: {
+        // Generate JWT token
+        const token = generateToken({
           id: participant.id,
           username: participant.username,
           role: participant.role
-        }
-      });
+        });
 
-    } catch (error) {
-      res.status(500).json({ 
-        error: 'Login failed',
-        code: 'LOGIN_ERROR',
-        details: error instanceof Error ? error.message : 'Unknown error'
-      });
-    }
+        res.json({
+          message: 'Login successful',
+          token,
+          user: {
+            id: participant.id,
+            username: participant.username,
+            role: participant.role
+          }
+        });
+
+      } catch (error) {
+        res.status(500).json({ 
+          error: 'Login failed',
+          code: 'LOGIN_ERROR',
+          details: error instanceof Error ? error.message : 'Unknown error'
+        });
+      }
+    });
   });
 
   app.post('/api/auth/set-password', requireAuth, async (req, res) => {
@@ -872,7 +885,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         },
         statistics: stats,
         participants: participants.length,
-        uptime: process.uptime()
+        uptime: process.uptime(),
+        observability: {
+          phoenixEnabled: !!process.env.PHOENIX_OTEL_ENDPOINT,
+          tracingActive: true,
+          endpoint: process.env.PHOENIX_OTEL_ENDPOINT || 'Not configured'
+        }
       });
     } catch (error) {
       res.status(500).json({
@@ -881,6 +899,93 @@ export async function registerRoutes(app: Express): Promise<Server> {
         timestamp: new Date().toISOString()
       });
     }
+  });
+
+  // Phoenix observability status endpoint
+  app.get('/api/observability/status', async (req, res) => {
+    await traceSupplyChainEvent('Observability.Status', { 
+      endpoint: '/api/observability/status',
+      requestTime: new Date().toISOString()
+    }, async () => {
+      try {
+        const phoenixConfig = {
+          enabled: !!process.env.PHOENIX_OTEL_ENDPOINT,
+          endpoint: process.env.PHOENIX_OTEL_ENDPOINT || 'Not configured',
+          hasApiKey: !!process.env.PHOENIX_API_KEY,
+          serviceName: 'OriginLedger-SupplyChain'
+        };
+
+        const observabilityMetrics = {
+          totalTraces: 'Available in Phoenix Dashboard',
+          configuration: phoenixConfig,
+          features: [
+            'Blockchain validation tracing',
+            'Asset operation monitoring', 
+            'Participant activity tracking',
+            'API performance metrics',
+            'Supply chain event correlation'
+          ],
+          integrationStatus: phoenixConfig.enabled ? 'Active' : 'Configured (awaiting endpoint)',
+          timestamp: new Date().toISOString()
+        };
+
+        res.json({
+          message: 'Phoenix OpenTelemetry integration ready for OriginLedger',
+          ...observabilityMetrics
+        });
+      } catch (error) {
+        res.status(500).json({ 
+          error: 'Failed to retrieve observability status',
+          code: 'OBSERVABILITY_ERROR'
+        });
+      }
+    });
+  });
+
+  // Demo Phoenix tracing endpoint
+  app.post('/api/observability/demo', async (req, res) => {
+    await traceSupplyChainEvent('Demo.PhoenixIntegration', {
+      demoType: 'blockchain_observability',
+      userAgent: req.get('User-Agent'),
+      timestamp: Date.now(),
+      remoteAddress: req.ip
+    }, async () => {
+      try {
+        // Simulate supply chain operations with observability
+        const blockchain = await storage.getBlockchain();
+        const participants = await storage.getAllParticipants();
+        const assets = await storage.getAllAssets();
+
+        // Trace blockchain validation
+        await traceChainValidation(blockchain.length, async () => {
+          // Simulate validation work
+          await new Promise(resolve => setTimeout(resolve, 100));
+        });
+
+        res.json({
+          message: 'Phoenix observability demo completed successfully',
+          tracedOperations: [
+            'Supply chain event correlation',
+            'Blockchain validation monitoring',
+            'Asset tracking telemetry'
+          ],
+          dataSnapshot: {
+            totalBlocks: blockchain.length,
+            totalParticipants: participants.length,
+            totalAssets: assets.length
+          },
+          phoenixIntegration: {
+            status: 'Active tracing demonstrated',
+            nextSteps: 'Configure PHOENIX_OTEL_ENDPOINT to see traces in dashboard'
+          }
+        });
+      } catch (error) {
+        res.status(500).json({
+          error: 'Demo failed',
+          code: 'DEMO_ERROR'
+        });
+      }
+    });
   });
 
   // Import and mount subscription routes

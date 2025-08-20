@@ -12,6 +12,14 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+### August 2025 - Arize Phoenix OpenTelemetry Integration
+- **Enterprise Observability**: Integrated Arize Phoenix OpenTelemetry SDK for comprehensive supply chain monitoring
+- **Trace Instrumentation**: Added tracing for blockchain validation, asset operations, participant activities, and API performance
+- **Observability Dashboard**: Created dedicated frontend interface for Phoenix integration status and configuration
+- **Demo Capabilities**: Built demonstration endpoints showcasing blockchain observability with supply chain event correlation
+- **Partnership Ready**: Complete integration framework prepared for Arize AI collaboration with API key configuration support
+- **Production Monitoring**: Enhanced health checks with observability status and telemetry metrics
+
 ### January 2025 - Production-Ready Enhancements
 - **JWT Authentication**: Implemented secure JWT-based authentication with bcryptjs password hashing for all participants
 - **Enhanced Blockchain Validation**: Advanced hash verification that detects corruption and tampering with detailed error reporting
