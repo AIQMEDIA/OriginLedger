@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Building2, DollarSign, MapPin, Users, CreditCard, Percent } from "lucide-react";
+import { Building2, DollarSign, MapPin, Users, CreditCard, Percent, AlertTriangle, Shield } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -387,6 +387,81 @@ export function DetroitCivicPage() {
             </Button>
           </CardContent>
         </Card>
+      </div>
+      
+      {/* IP Protection Footer */}
+      <div className="bg-gray-900 text-white py-8 px-4 mt-16">
+        <div className="max-w-7xl mx-auto">
+          {/* Copyright Notice */}
+          <div className="border-l-4 border-red-500 pl-6 mb-6">
+            <div className="flex items-center gap-2 mb-2">
+              <AlertTriangle className="h-5 w-5 text-red-400" />
+              <h3 className="font-bold text-lg">PROPRIETARY & CONFIDENTIAL</h3>
+            </div>
+            <p className="text-gray-300 mb-2">
+              © 2025 OriginLedger Technologies, LLC. All Rights Reserved.
+            </p>
+            <p className="text-sm text-gray-400">
+              OriginLedger™, Municipal Blockchain Platform™, and Property NFT Fractionalization™ 
+              are registered trademarks of OriginLedger Technologies, LLC.
+            </p>
+          </div>
+
+          {/* Patent Notice */}
+          <div className="border-l-4 border-yellow-500 pl-6 mb-6">
+            <div className="flex items-center gap-2 mb-2">
+              <Shield className="h-5 w-5 text-yellow-400" />
+              <h3 className="font-bold text-lg">PATENT PENDING TECHNOLOGIES</h3>
+            </div>
+            <div className="grid md:grid-cols-2 gap-4 text-sm text-gray-300">
+              <div>
+                <p className="font-semibold text-yellow-400 mb-1">Municipal Blockchain Integration</p>
+                <p>Method for integrating municipal property records with blockchain technology</p>
+              </div>
+              <div>
+                <p className="font-semibold text-yellow-400 mb-1">Property NFT Fractionalization</p>
+                <p>Novel method for converting real estate into ERC-1155 compliant NFT shares</p>
+              </div>
+              <div>
+                <p className="font-semibold text-yellow-400 mb-1">Civic Cryptocurrency Gateway</p>
+                <p>Integration system for municipal services accepting cryptocurrency payments</p>
+              </div>
+              <div>
+                <p className="font-semibold text-yellow-400 mb-1">Blockchain Property Registry</p>
+                <p>Immutable property ownership tracking with smart contract automation</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Legal Warning */}
+          <div className="bg-red-900/20 border border-red-500 rounded-lg p-4 mb-6">
+            <h4 className="font-bold text-red-400 mb-2">DETROIT STAKEHOLDER CONFIDENTIALITY NOTICE</h4>
+            <p className="text-sm text-gray-300">
+              This demonstration is provided under strict confidentiality for authorized Detroit municipal 
+              stakeholders only. All technologies shown are proprietary innovations of OriginLedger Technologies, LLC. 
+              By accessing this system, you agree to maintain confidentiality and use information solely for 
+              partnership evaluation purposes.
+            </p>
+            <div className="mt-3 text-xs text-red-400 font-semibold">
+              UNAUTHORIZED COPYING, DISTRIBUTION, OR REVERSE ENGINEERING IS STRICTLY PROHIBITED
+            </div>
+          </div>
+
+          {/* Contact Information */}
+          <div className="border-t border-gray-700 pt-6 mt-6 grid md:grid-cols-2 gap-6 text-sm">
+            <div>
+              <h4 className="font-semibold text-white mb-2">Legal Department</h4>
+              <p className="text-gray-400">legal@originledger.com</p>
+              <p className="text-gray-400">Partnership Inquiries: partnerships@originledger.com</p>
+            </div>
+            <div>
+              <h4 className="font-semibold text-white mb-2">Patent & IP Protection</h4>
+              <p className="text-red-400 text-xs font-semibold">
+                VIOLATION MAY RESULT IN IMMEDIATE LEGAL ACTION
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -6,6 +6,7 @@ import { initializePhoenixTelemetry } from './phoenix-otel';
 import { createCanaryProtection, DEFAULT_CANARY_ENDPOINTS } from './security/canary-middleware';
 import { auditLogger } from './security/audit-logger';
 import { rateLimiter } from './security/rate-limiter';
+import { addIPProtectionHeaders, detroitStakeholderNotice, logIPProtectedAccess } from './middleware/ip-protection';
 
 const app = express();
 
@@ -21,6 +22,11 @@ const forceHttps = (req: any, res: any, next: any) => {
 };
 
 app.use(forceHttps);
+
+// 1.5. IP Protection and Copyright Headers
+addIPProtectionHeaders(app);
+app.use(detroitStakeholderNotice);
+app.use(logIPProtectedAccess);
 
 // 2. Enterprise Security Middleware Stack
 // Rate limiting for API endpoints
