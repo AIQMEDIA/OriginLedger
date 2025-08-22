@@ -3,6 +3,9 @@ import helmet from "helmet";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { initializePhoenixTelemetry } from './phoenix-otel';
+import { createCanaryProtection, DEFAULT_CANARY_ENDPOINTS } from './security/canary-middleware';
+import { auditLogger } from './security/audit-logger';
+import { rateLimiter } from './security/rate-limiter';
 
 const app = express();
 
@@ -19,7 +22,19 @@ const forceHttps = (req: any, res: any, next: any) => {
 
 app.use(forceHttps);
 
-// 2. Set strong HTTP headers for security
+// 2. Enterprise Security Middleware Stack
+// Rate limiting for API endpoints
+app.use(rateLimiter.createMiddleware());
+
+// Security canary system for intrusion detection
+const canaryConfig = {
+  trackedEndpoints: DEFAULT_CANARY_ENDPOINTS,
+  enableDeception: true,
+  logAllAttempts: true
+};
+app.use(createCanaryProtection(canaryConfig));
+
+// 3. Set strong HTTP headers for security
 const cspDirectives: any = {
   defaultSrc: ["'self'"],
   scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"], // Allow inline for Vite dev
@@ -52,6 +67,7 @@ app.use(helmet({
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
+// 4. Enhanced API logging with security audit
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
@@ -65,7 +81,12 @@ app.use((req, res, next) => {
 
   res.on("finish", () => {
     const duration = Date.now() - start;
+    
+    // Security audit logging for API endpoints
     if (path.startsWith("/api")) {
+      const userId = (req as any).user?.id;
+      auditLogger.logAPIAccess(req, path, res.statusCode, userId);
+      
       let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
       if (capturedJsonResponse) {
         logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
