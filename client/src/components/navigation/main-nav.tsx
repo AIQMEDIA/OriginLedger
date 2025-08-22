@@ -34,7 +34,8 @@ import {
   HelpCircle,
   CreditCard,
   Zap,
-  Building2
+  Building2,
+  Coins
 } from "lucide-react";
 
 interface NavigationItem {
@@ -115,6 +116,12 @@ const navigationItems: NavigationItem[] = [
     label: "Detroit Civic",
     icon: Building2,
     requireAuth: false
+  },
+  {
+    path: "/nft",
+    label: "NFT Trading",
+    icon: Coins,
+    requireAuth: true
   },
   {
     path: "/observability",

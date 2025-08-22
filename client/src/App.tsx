@@ -26,6 +26,7 @@ import Observability from "@/pages/observability";
 import NotFound from "@/pages/not-found";
 import { DetroitCivicPage } from "@/pages/DetroitCivicPage";
 import { DetroitResidentPortal } from "@/pages/DetroitResidentPortal";
+import { NFTFractionalization } from "@/pages/NFTFractionalization";
 
 function Router() {
   return (
@@ -81,6 +82,11 @@ function Router() {
           <Route path="/detroit/resident">
             <RoleGuard allowedRoles={["resident", "government"]} requireAuth={true}>
               <DetroitResidentPortal />
+            </RoleGuard>
+          </Route>
+          <Route path="/nft">
+            <RoleGuard requireAuth={true}>
+              <NFTFractionalization />
             </RoleGuard>
           </Route>
           <Route path="/api-docs" component={ApiDocs} />
