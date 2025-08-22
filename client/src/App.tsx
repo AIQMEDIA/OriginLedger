@@ -24,6 +24,7 @@ import RoleDemo from "@/pages/role-demo";
 import Subscription from "@/pages/subscription";
 import Observability from "@/pages/observability";
 import NotFound from "@/pages/not-found";
+import { DetroitCivicPage } from "@/pages/DetroitCivicPage";
 
 function Router() {
   return (
@@ -75,6 +76,7 @@ function Router() {
               <Observability />
             </RoleGuard>
           </Route>
+          <Route path="/detroit" component={DetroitCivicPage} />
           <Route path="/api-docs" component={ApiDocs} />
           <Route component={NotFound} />
         </Switch>

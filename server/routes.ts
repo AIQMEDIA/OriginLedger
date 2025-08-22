@@ -15,6 +15,7 @@ import {
 } from './phoenix-otel';
 import { auditLogger } from './security/audit-logger';
 import { DEFAULT_CANARY_ENDPOINTS } from './security/canary-middleware';
+import { registerDetroitRoutes } from './detroit-routes';
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Enhanced utility function for calculating block hash
@@ -1272,6 +1273,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Import and mount subscription routes
   const subscriptionRoutes = await import('./subscription-routes');
   app.use("/api/subscription", subscriptionRoutes.default);
+
+  // Register Detroit Civic Blockchain routes
+  registerDetroitRoutes(app);
 
   const httpServer = createServer(app);
   return httpServer;

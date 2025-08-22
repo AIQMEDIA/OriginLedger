@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, timestamp, json } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, timestamp, json, numeric } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -181,3 +181,71 @@ export const insertApiRateLimitSchema = createInsertSchema(apiRateLimits).omit({
   windowStart: true,
   lastRequest: true,
 });
+
+// ========================
+// DETROIT CIVIC BLOCKCHAIN SCHEMA
+// ========================
+
+// Property Registry for Detroit Municipal Services
+export const properties = pgTable("properties", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  propertyId: text("property_id").notNull().unique(),             // City-assigned unique identifier
+  address: text("address").notNull(),                             // Street address
+  ownerId: varchar("owner_id").references(() => participants.id), // Current owner (resident/gov/etc.)
+  assessedValue: integer("assessed_value"),                       // Latest city-assessed value (USD/cents)
+  status: text("status").notNull().default("active"),             // active, in_transfer, foreclosed, etc.
+  taxOwed: integer("tax_owed").notNull().default(0),              // Unpaid taxes in cents
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  metadata: json("metadata")                                      // Parcel info, deeds, archives, etc.
+});
+
+// Crypto Payment Events for Municipal Services
+export const payments = pgTable("payments", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  propertyId: varchar("property_id").references(() => properties.id),
+  payerId: varchar("payer_id").references(() => participants.id),
+  txHash: text("tx_hash"),                        // Crypto transaction hash (if on-chain)
+  paymentMethod: text("payment_method").notNull(),// "usdc", "eth", "fiat"
+  amount: integer("amount").notNull(),            // In cents for fiat, or smallest unit of crypto
+  status: text("status").notNull().default("pending"), // pending, completed, failed
+  timestamp: timestamp("timestamp").notNull().defaultNow(),
+  context: json("context")                        // Any gateway metadata, receipts, etc.
+});
+
+// Ownership Transfer with NFT/Fractional Support
+export const ownerships = pgTable("ownerships", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  propertyId: varchar("property_id").references(() => properties.id),
+  ownerId: varchar("owner_id").references(() => participants.id),
+  fraction: numeric("fraction").notNull().default("1.0"),   // 1.0 = full, 0.33 = 33% (fractionalization)
+  acquiredAt: timestamp("acquired_at").notNull().defaultNow(),
+  transferTx: text("transfer_tx"),                     // Blockchain/transaction hash
+  metadata: json("metadata"),                          // Sale details, docs, proof
+});
+
+// Detroit Civic Types
+export type Property = typeof properties.$inferSelect;
+export type Payment = typeof payments.$inferSelect;
+export type Ownership = typeof ownerships.$inferSelect;
+
+export type InsertProperty = z.infer<typeof insertPropertySchema>;
+export type InsertPayment = z.infer<typeof insertPaymentSchema>;
+export type InsertOwnership = z.infer<typeof insertOwnershipSchema>;
+
+// Detroit Civic Insert Schemas
+export const insertPropertySchema = createInsertSchema(properties).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertPaymentSchema = createInsertSchema(payments).omit({
+  id: true,
+  timestamp: true,
+});
+
+export const insertOwnershipSchema = createInsertSchema(ownerships).omit({
+  id: true,
+  acquiredAt: true,
+} as const);

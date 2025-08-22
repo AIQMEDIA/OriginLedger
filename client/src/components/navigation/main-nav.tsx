@@ -33,7 +33,8 @@ import {
   Sun,
   HelpCircle,
   CreditCard,
-  Zap
+  Zap,
+  Building2
 } from "lucide-react";
 
 interface NavigationItem {
@@ -108,6 +109,12 @@ const navigationItems: NavigationItem[] = [
     label: "Subscription",
     icon: CreditCard,
     requireAuth: true
+  },
+  {
+    path: "/detroit",
+    label: "Detroit Civic",
+    icon: Building2,
+    requireAuth: false
   },
   {
     path: "/observability",

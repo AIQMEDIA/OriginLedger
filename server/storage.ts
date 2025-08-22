@@ -3,7 +3,10 @@ import {
   type Participant, type InsertParticipant,
   type Asset, type InsertAsset,
   type Event, type InsertEvent,
-  type BlockchainData, type ParticipantStats, type DashboardStats
+  type BlockchainData, type ParticipantStats, type DashboardStats,
+  type Property, type InsertProperty,
+  type Payment, type InsertPayment,
+  type Ownership, type InsertOwnership
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import crypto from "crypto";
@@ -39,11 +42,36 @@ export interface IStorage {
   getDashboardStats(): Promise<DashboardStats>;
 }
 
-export class MemStorage implements IStorage {
+// Detroit Civic Storage Interface Extension
+export interface IDetroitCivicStorage extends IStorage {
+  // Property management
+  createProperty(property: InsertProperty): Promise<Property>;
+  getProperty(propertyId: string): Promise<Property | undefined>;
+  getAllProperties(): Promise<Property[]>;
+  getPropertiesByOwner(ownerId: string): Promise<Property[]>;
+  updateProperty(id: string, updates: Partial<Property>): Promise<void>;
+
+  // Payments
+  recordPayment(payment: InsertPayment): Promise<Payment>;
+  getPayment(id: string): Promise<Payment | undefined>;
+  getPaymentsByProperty(propertyId: string): Promise<Payment[]>;
+  getPaymentsByPayer(payerId: string): Promise<Payment[]>;
+
+  // Ownership
+  addOwnership(ownership: InsertOwnership): Promise<Ownership>;
+  getOwnership(id: string): Promise<Ownership | undefined>;
+  getOwners(propertyId: string): Promise<Ownership[]>;
+  getOwnerships(ownerId: string): Promise<Ownership[]>;
+}
+
+export class MemStorage implements IDetroitCivicStorage {
   private blocks: Map<string, Block>;
   private participants: Map<string, Participant>;
   private assets: Map<string, Asset>;
   private events: Map<string, Event>;
+  private properties: Map<string, Property>;
+  private payments: Map<string, Payment>;
+  private ownerships: Map<string, Ownership>;
   private blockIndex: number;
 
   constructor() {
@@ -51,9 +79,13 @@ export class MemStorage implements IStorage {
     this.participants = new Map();
     this.assets = new Map();
     this.events = new Map();
+    this.properties = new Map();
+    this.payments = new Map();
+    this.ownerships = new Map();
     this.blockIndex = 0;
     this.initializeGenesis();
     this.initializeTestData();
+    this.initializeDetroitTestData();
   }
 
   private initializeGenesis() {
@@ -320,6 +352,166 @@ export class MemStorage implements IStorage {
       (participant as any).passwordHash = passwordHash;
       this.participants.set(id, participant);
     }
+  }
+
+  // ========================
+  // DETROIT CIVIC METHODS
+  // ========================
+
+  async createProperty(property: InsertProperty): Promise<Property> {
+    const newProperty: Property = {
+      id: randomUUID(),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      ...property
+    };
+    this.properties.set(newProperty.id, newProperty);
+    return newProperty;
+  }
+
+  async getProperty(propertyId: string): Promise<Property | undefined> {
+    return this.properties.get(propertyId);
+  }
+
+  async getAllProperties(): Promise<Property[]> {
+    return Array.from(this.properties.values());
+  }
+
+  async getPropertiesByOwner(ownerId: string): Promise<Property[]> {
+    return Array.from(this.properties.values()).filter(p => p.ownerId === ownerId);
+  }
+
+  async updateProperty(id: string, updates: Partial<Property>): Promise<void> {
+    const property = this.properties.get(id);
+    if (property) {
+      const updatedProperty = { ...property, ...updates, updatedAt: new Date() };
+      this.properties.set(id, updatedProperty);
+    }
+  }
+
+  async recordPayment(payment: InsertPayment): Promise<Payment> {
+    const newPayment: Payment = {
+      id: randomUUID(),
+      timestamp: new Date(),
+      ...payment
+    };
+    this.payments.set(newPayment.id, newPayment);
+    return newPayment;
+  }
+
+  async getPayment(id: string): Promise<Payment | undefined> {
+    return this.payments.get(id);
+  }
+
+  async getPaymentsByProperty(propertyId: string): Promise<Payment[]> {
+    return Array.from(this.payments.values()).filter(p => p.propertyId === propertyId);
+  }
+
+  async getPaymentsByPayer(payerId: string): Promise<Payment[]> {
+    return Array.from(this.payments.values()).filter(p => p.payerId === payerId);
+  }
+
+  async addOwnership(ownership: InsertOwnership): Promise<Ownership> {
+    const newOwnership: Ownership = {
+      id: randomUUID(),
+      acquiredAt: new Date(),
+      ...ownership
+    };
+    this.ownerships.set(newOwnership.id, newOwnership);
+    return newOwnership;
+  }
+
+  async getOwnership(id: string): Promise<Ownership | undefined> {
+    return this.ownerships.get(id);
+  }
+
+  async getOwners(propertyId: string): Promise<Ownership[]> {
+    return Array.from(this.ownerships.values()).filter(o => o.propertyId === propertyId);
+  }
+
+  async getOwnerships(ownerId: string): Promise<Ownership[]> {
+    return Array.from(this.ownerships.values()).filter(o => o.ownerId === ownerId);
+  }
+
+  private async initializeDetroitTestData() {
+    // Create Detroit City Government participant
+    const detroitGov = await this.createParticipant({
+      username: "detroit_city_gov",
+      role: "government",
+      company: "City of Detroit",
+      email: "blockchain@detroitmi.gov",
+      passwordHash: await bcrypt.hash("detroit2025", 10)
+    });
+
+    // Create sample property owner - Justin Owenu
+    const propertyOwner = await this.createParticipant({
+      username: "justin_owenu",
+      role: "resident",
+      company: "Detroit Resident",
+      email: "justin.owenu@example.com",
+      passwordHash: await bcrypt.hash("demo123", 10)
+    });
+
+    // Create sample properties
+    const property1 = await this.createProperty({
+      propertyId: "DET-0012345",
+      address: "1234 Woodward Ave, Detroit, MI 48201",
+      ownerId: propertyOwner.id,
+      assessedValue: 25000000, // $250,000 in cents
+      status: "active",
+      taxOwed: 180000, // $1,800 in cents
+      metadata: {
+        parcelInfo: "Lot 23 Block 7",
+        year: 2025,
+        neighborhood: "Downtown Detroit",
+        propertyType: "Residential",
+        squareFootage: 1800
+      }
+    });
+
+    const property2 = await this.createProperty({
+      propertyId: "DET-0012346",
+      address: "5678 Jefferson Ave, Detroit, MI 48207",
+      ownerId: detroitGov.id,
+      assessedValue: 45000000, // $450,000 in cents
+      status: "active",
+      taxOwed: 0, // Government property
+      metadata: {
+        parcelInfo: "Lot 15 Block 12",
+        year: 2025,
+        neighborhood: "Riverfront",
+        propertyType: "Municipal Building",
+        squareFootage: 3500
+      }
+    });
+
+    // Sample payment for property taxes
+    await this.recordPayment({
+      propertyId: property1.id,
+      payerId: propertyOwner.id,
+      txHash: "0xABC123DEF456789",
+      paymentMethod: "usdc",
+      amount: 90000, // $900 partial payment
+      status: "completed",
+      context: {
+        reason: "2025 Property Tax Payment - Partial",
+        blockchainNetwork: "Ethereum",
+        gasUsed: "21000"
+      }
+    });
+
+    // Sample ownership record
+    await this.addOwnership({
+      propertyId: property1.id,
+      ownerId: propertyOwner.id,
+      fraction: "1.0",
+      transferTx: "0xDEF456ABC123789",
+      metadata: {
+        note: "Full ownership transfer via blockchain",
+        purchasePrice: 25000000,
+        transferDate: "2025-01-15"
+      }
+    });
   }
 }
 
