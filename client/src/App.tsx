@@ -25,6 +25,7 @@ import Subscription from "@/pages/subscription";
 import Observability from "@/pages/observability";
 import NotFound from "@/pages/not-found";
 import { DetroitCivicPage } from "@/pages/DetroitCivicPage";
+import { DetroitResidentPortal } from "@/pages/DetroitResidentPortal";
 
 function Router() {
   return (
@@ -77,6 +78,11 @@ function Router() {
             </RoleGuard>
           </Route>
           <Route path="/detroit" component={DetroitCivicPage} />
+          <Route path="/detroit/resident">
+            <RoleGuard allowedRoles={["resident", "government"]} requireAuth={true}>
+              <DetroitResidentPortal />
+            </RoleGuard>
+          </Route>
           <Route path="/api-docs" component={ApiDocs} />
           <Route component={NotFound} />
         </Switch>
