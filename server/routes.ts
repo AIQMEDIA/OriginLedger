@@ -16,6 +16,7 @@ import {
 import { auditLogger } from './security/audit-logger';
 import { DEFAULT_CANARY_ENDPOINTS } from './security/canary-middleware';
 import { registerDetroitRoutes } from './detroit-routes';
+import { gitRoutes } from './git-routes';
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Enhanced utility function for calculating block hash
@@ -1276,6 +1277,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Register Detroit Civic Blockchain routes
   registerDetroitRoutes(app);
+  
+  // Git integration routes
+  app.use('/api/git', gitRoutes);
 
   const httpServer = createServer(app);
   return httpServer;

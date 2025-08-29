@@ -28,6 +28,7 @@ import { DetroitCivicPage } from "@/pages/DetroitCivicPage";
 import { DetroitResidentPortal } from "@/pages/DetroitResidentPortal";
 import { NFTFractionalization } from "@/pages/NFTFractionalization";
 import { IPWatermark, HeaderCopyright } from "@/components/ip-watermark";
+import { GitManagement } from "@/pages/GitManagement";
 
 function Router() {
   return (
